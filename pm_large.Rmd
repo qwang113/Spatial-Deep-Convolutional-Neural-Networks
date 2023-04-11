@@ -65,32 +65,34 @@ pm_large <- as.data.frame(cbind(long, lat, pm_filt))
 coordinates(pm_large) <- ~ long + lat
 coords <- cbind(long, lat)
 # 
-# x.res <- 500
-# y.res <- 500
-# surf <- mba.surf(cbind(coords, pm_filt), no.X = x.res, no.Y = y.res, h = 5, m = 2, extend = TRUE)$xyz.est
-# 
-# all_inside <- NULL
-# exp_grid <- expand.grid(surf$x, surf$y)
-# for (i in 1:length(states)) {
-#   tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),as.matrix(exp_grid))
-#   all_inside <- unique(c(all_inside, tem))
-#   
-# }
-# obs_pm <- surf$z[all_inside] 
-# obs_long <-  as.matrix(exp_grid)[all_inside,1]
-# obs_lat <-  as.matrix(exp_grid)[all_inside,2]
-# p1 <- 
-# ggplot() +
-#   geom_contour_filled(aes(x = obs_long, y = obs_lat, z = obs_pm))+
-#    geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red")
-# p2 <- 
-# ggplot() +
-#   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") + 
-#   geom_point(aes(x = long, y = lat, color = pm_filt)) +
-#   scale_color_viridis_c()
-# 
-# p1
-# p2
+x.res <- 500
+y.res <- 500
+surf <- mba.surf(cbind(coords, pm_filt), no.X = x.res, no.Y = y.res, h = 5, m = 2, extend = TRUE)$xyz.est
+
+all_inside <- NULL
+exp_grid <- expand.grid(surf$x, surf$y)
+for (i in 1:length(states)) {
+  tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),as.matrix(exp_grid))
+  all_inside <- unique(c(all_inside, tem))
+
+}
+obs_pm <- surf$z[all_inside]
+obs_long <-  as.matrix(exp_grid)[all_inside,1]
+obs_lat <-  as.matrix(exp_grid)[all_inside,2]
+p1 <-
+ggplot() +
+  geom_contour_filled(aes(x = obs_long, y = obs_lat, z = obs_pm))+
+   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
+  labs(x = "Longitude", y = "Latitude")
+p2 <-
+ggplot() +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
+  geom_point(aes(x = long, y = lat, color = pm_filt)) +
+  scale_color_viridis_c()+
+  labs(x = "Longitude", y = "Latitude")
+
+p1
+p2
 
 ```
 

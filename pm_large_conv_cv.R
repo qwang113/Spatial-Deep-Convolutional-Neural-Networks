@@ -1,4 +1,4 @@
-rm(list = ls())
+
 library(FRK)
 library(spNNGP)
 library(ggplot2)
@@ -14,7 +14,7 @@ library(foreach)
 library(foreach)
 library(doParallel)
 # Read the data
-
+use_condaenv("tf_gpu")
 pm_large_all <- read.csv(here::here("annual_conc_by_monitor_2022.csv"))
 pm_large_all <- pm_large_all[which(pm_large_all$Parameter.Name == "PM2.5 - Local Conditions"),]
 point_aba <- unique(c(which(pm_large_all$Longitude <= -130), which(pm_large_all$Latitude <=20 ) ))
@@ -147,6 +147,6 @@ pm_large_conv_cv <- function(curr_index, cv_index = cv_index_all, basis_arr = ba
 # 
 # timefore <- system.time( foreach(i = 1:5, .combine = "c") %dopar% pm_large_deep_cv(i))
 
-cv_mse_dl_fore <- foreach(i = 1:5, .combine = "c") %dopar% pm_large_conv_cv(i)
+cv_mse_ck <- foreach(i = 1:5, .combine = "c") %dopar% pm_large_conv_cv(i)
 
 #time_all <- rbind(timepara,timefore)

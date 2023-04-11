@@ -1,4 +1,4 @@
-rm(list = ls())
+
 library(FRK)
 library(spNNGP)
 library(ggplot2)
@@ -14,7 +14,7 @@ library(foreach)
 library(foreach)
 library(doParallel)
 # Read the data
-
+use_condaenv("tf_gpu")
 pm_large_all <- read.csv(here::here("annual_conc_by_monitor_2022.csv"))
 pm_large_all <- pm_large_all[which(pm_large_all$Parameter.Name == "PM2.5 - Local Conditions"),]
 point_aba <- unique(c(which(pm_large_all$Longitude <= -130), which(pm_large_all$Latitude <=20 ) ))
@@ -110,34 +110,35 @@ pm_large_deep_cv <- function(curr_index, cv_index = cv_index_all, basis_arr = ba
   return(curr_mse)
 }
   
-cl <- makeCluster(5)
-clusterEvalQ(cl, {
-  library(FRK)
-  library(spNNGP)
-  library(ggplot2)
-  library(maps)
-  library(MBA)
-  library(fields)
-  library(sp)
-  library(ncdf4)
-  library(reticulate)
-  library(tensorflow)
-  library(keras)
-  library(foreach)
-  library(foreach)
-  library(doParallel)
-})
+# cl <- makeCluster(5)
+# clusterEvalQ(cl, {
+#   library(FRK)
+#   library(spNNGP)
+#   library(ggplot2)
+#   library(maps)
+#   library(MBA)
+#   library(fields)
+#   library(sp)
+#   library(ncdf4)
+#   library(reticulate)
+#   library(tensorflow)
+#   library(keras)
+#   library(foreach)
+#   library(foreach)
+#   library(doParallel)
+# })
+# 
+# cv_mse_dl_para <- clusterApply(cl = cl, 1:5, fun = pm_large_deep_cv, cv_index = cv_index_all, basis_arr = basis_arr_all, 
+#                        pm_filt = pm_large_all$Arithmetic.Mean, shape_row = row_shape, shape_col = col_shape)
+# 
+# 
+# timepara <- system.time( clusterApply(cl = cl, 1:5, fun = pm_large_deep_cv, cv_index = cv_index_all, basis_arr = basis_arr_all, 
+#                                 pm_filt = pm_large_all$Arithmetic.Mean, shape_row = row_shape, shape_col = col_shape))
+# stopCluster(cl)
+# 
+# timefore <- system.time( foreach(i = 1:5, .combine = "c") %dopar% pm_large_deep_cv(i))
 
-cv_mse_dl_para <- clusterApply(cl = cl, 1:5, fun = pm_large_deep_cv, cv_index = cv_index_all, basis_arr = basis_arr_all, 
-                       pm_filt = pm_large_all$Arithmetic.Mean, shape_row = row_shape, shape_col = col_shape)
+cv_mse_dk <- foreach(i = 1:5, .combine = "c") %dopar% pm_large_deep_cv(i)
 
+# time_all <- rbind(timepara,timefore)
 
-timepara <- system.time( clusterApply(cl = cl, 1:5, fun = pm_large_deep_cv, cv_index = cv_index_all, basis_arr = basis_arr_all, 
-                                pm_filt = pm_large_all$Arithmetic.Mean, shape_row = row_shape, shape_col = col_shape))
-stopCluster(cl)
-
-timefore <- system.time( foreach(i = 1:5, .combine = "c") %dopar% pm_large_deep_cv(i))
-
-cv_mse_dl_fore <- foreach(i = 1:5, .combine = "c") %dopar% pm_large_deep_cv(i)
-
-time_all <- rbind(timepara,timefore)
