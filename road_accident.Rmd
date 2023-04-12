@@ -22,6 +22,7 @@ library(tensorflow)
 library(keras)
 ```
 
+Data set available on website: https://archive.ics.uci.edu/ml/datasets/UrbanGB%2C+urban+road+accidents+coordinates+labelled+by+the+urban+center.
 
 ```{r}
 acc_loc <- read.table(here::here("urban/urbanGB.txt"), sep = ",")
@@ -146,7 +147,8 @@ mod_train_dk <- model_dk %>%
 loss_dk <- model_dk %>%
           evaluate(x_te, acc_te)
 
-
+p1
+p2
 
 
 ```

@@ -17,6 +17,7 @@ library(fields)
 library(sp)
 library(ncdf4)
 library(reticulate)
+use_condaenv("tf_gpu")
 library(tensorflow)
 library(keras)
 ```
@@ -220,9 +221,29 @@ loss_ck <- model_ck %>%
           evaluate(x_te, pm_te)
 ```
 
-```{r}
-rbind(loss_dk, loss_ck)
+# NNGP Model
 
+
+```{r}
+long_tr <- long[train_index]
+lat_tr <- lat[train_index]
+pm_tr <- pm[train_index]
+pm_te <- pm[-train_index]
+long_te <- long[-train_index]
+lat_te <- lat[-train_index]
+
+spnn_mod_15 <- spNNGP(pm_tr ~ 1, coords = cbind(long_tr,lat_tr), cov.model = "exponential",
+                       priors = list("sigma.sq.IG" = c(0.001, 0.001),"tau.sq.IG" = c(0.001,0.001), "phi.Unif" = c(0.1,3)),
+                       starting = list("sigma.sq" = 100, "tau.sq" = 10, "phi" = 0.5),
+                       tuning = list( "sigma.sq" = 0.1, "tau.sq" = 0.1, "phi" = 0.1)
+                       , n.neighbors = 15, n.samples = 10000 )
+ cv_curr_pred <- predict(spnn_mod_15, X.0 = matrix(1, nrow = length(long_te), ncol = 1), coords.0 = cbind(long_te, lat_te))$p.y.0
+ 
+nngp_pred <- apply(cv_curr_pred, 1, mean)
+
+loss_nngp <- mean((nngp_pred - pm_te)^2)
 ```
+
+
 
 
