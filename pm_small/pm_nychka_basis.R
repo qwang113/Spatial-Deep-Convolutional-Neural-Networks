@@ -140,8 +140,8 @@ model_dk %>%
   layer_dropout(rate = 0.4) %>% 
   layer_dense(units = 256, activation = 'relu') %>%
   layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 256, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  # layer_dense(units = 256, activation = 'relu') %>%
+  # layer_dropout(rate = 0.3) %>%
   layer_dense(units = 1, activation = 'linear')
 
 # Compile the model
