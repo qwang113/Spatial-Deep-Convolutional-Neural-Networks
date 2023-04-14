@@ -245,54 +245,6 @@ nngp_pred <- apply(cv_curr_pred, 1, mean)
 loss_nngp <- mean((nngp_pred - pm_te)^2)
 ```
 
-# Adding Covariates
-```{r}
-cov_all <- read.csv(here::here("covariate0605.csv"))
-```
-
-## Deep Kriging Model
-
-```{r}
-
-basis_tr <- basis_arr[train_index,,]
-basis_te <- basis_arr[-train_index,,]
-
-
-x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), shape_row*shape_col))  # So we want to reshape each observation from a picture to a vector
-x_te <- array_reshape(basis_te, c(nrow(basis_te), shape_row*shape_col))  # Same as prervious step
-
-pm_tr <- pm[train_index]
-pm_te <- pm[-train_index]
-
-
-model_dk <- keras_model_sequential() 
-
-model_dk %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 1, activation = 'linear')
-
-# Compile the model
-
-model_dk %>% compile(
-  loss = "mse",
-  optimizer = optimizer_adam(),
-  metrics = list("mse")
-)
-
-mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = pm_tr, epochs = 30, batch_size = 128, 
-      validation_split = 0.2)
-
-loss_dk_cov <- model_dk %>%
-          evaluate(x_te, pm_te)
-
-
-
-
-```
 
 
 
