@@ -138,9 +138,9 @@ model_dk <- keras_model_sequential()
 model_dk %>% 
   layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
   layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>% 
-  layer_dense(units = 128, activation = 'relu') %>%
+  layer_dense(units = 256, activation = 'relu') %>%
+  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 256, activation = 'relu') %>%
   layer_dropout(rate = 0.3) %>%
   layer_dense(units = 1, activation = 'linear')
 
