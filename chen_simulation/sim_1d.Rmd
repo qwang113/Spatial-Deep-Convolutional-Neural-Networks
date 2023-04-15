@@ -12,6 +12,8 @@ library(ggplot2)
 library(reticulate)
 library(keras)
 library(tensorflow)
+library(sp)
+library(fields)
 
 nychka_fun <- function(center_coords , obs_coords, theta){
   
@@ -135,12 +137,10 @@ for (curr_index in 1:10) {
   
   # dnn_mean_all 
   
-
-  
   x_tr <- cbind(1, matrix(as.numeric(train_x), ncol = 1))
   x_te <- cbind(1, matrix(as.numeric(test_x), ncol = 1))
-  # x_tr <- array_reshape(x_tr, c(nrow(x_tr), 2))  
-  # x_te <- array_reshape(x_te, c(nrow(x_te), 2))  
+  x_tr <- array_reshape(x_tr, c(nrow(x_tr), 2))  
+  x_te <- array_reshape(x_te, c(nrow(x_te), 2))  
   
   z_tr <- as.numeric(sim_dat[rep_idx,train_index])
   z_te <- as.numeric(sim_dat[rep_idx,-train_index])
@@ -150,8 +150,8 @@ for (curr_index in 1:10) {
   layer_dropout(rate = 0.4) %>% 
   layer_dense(units = 256, activation = 'relu') %>% 
   layer_dropout(rate = 0.4) %>% 
-  # layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>%
-  # layer_dropout(rate = 0.4) %>%
+  layer_dense(units = 256, activation = 'relu') %>%
+  layer_dropout(rate = 0.4) %>%
   layer_dense(units = 128, activation = 'relu') %>%
   layer_dropout(rate = 0.3) %>%
   layer_dense(units = 1, activation = 'linear')
