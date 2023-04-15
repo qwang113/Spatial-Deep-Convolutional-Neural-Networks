@@ -6,11 +6,28 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(reticulate)
 library(keras)
 library(tensorflow)
+
+nychka_fun <- function(center_coords , obs_coords, theta){
+  
+  d <- sqrt( (center_coords[1] - obs_coords[1])^2 + (center_coords[2]- obs_coords[2])^2)/theta
+  
+  if(d > 1 )
+  {
+    out <- 0
+  }else{
+    out <- (1-d)^6 * (35*d^2 + 18*d + 3)/3
+  }
+  
+  return(out)
+}
+
+
 ```
 In this section, we are going to reproduce the same result as Chen did in the deep Kriging paper.
 For 1d case, they simulated the $z$ in this way:
@@ -38,8 +55,8 @@ exp_cor <- function(d){
   return(exp(-abs(d)/0.1))
 }
 # 
-# dis <- spDists(cbind(s, 1))
-# cov_mat <- exp_cor(dis)
+dis <- spDists(cbind(s, 1))
+cov_mat <- exp_cor(dis)
 # for (i in 1:100) {
 #   sim_all[i,] <- mvtnorm::rmvnorm(1, mean = rep(1,1000), sigma = cov_mat) + rnorm(1000, mean = 0, sd = 0.1)
 #   print(i)
@@ -58,11 +75,6 @@ plot(x = 1:1000, sim_dat[1,], type = 'l', ylim = c(min(sim_dat)-0.3, max(sim_dat
   basis_2 <- seq(from = 0, to = 1, length.out = 19)
   basis_3 <- seq(from = 0, to = 1, length.out = 37)
   basis_4 <- seq(from = 0, to = 1, length.out = 73) 
-  
-  basis_dist_1 <- spDists(cbind(s,1), cbind(basis_1,1))
-  basis_dist_2 <- spDists(cbind(s,1), cbind(basis_2,1))
-  basis_dist_3 <- spDists(cbind(s,1), cbind(basis_3,1))
-  basis_dist_4 <- spDists(cbind(s,1), cbind(basis_4,1))
   
   basis_fun_1 <- matrix(NA, nrow = 1000, ncol = length(basis_1))
   basis_fun_2 <- matrix(NA, nrow = 1000, ncol = length(basis_2))
@@ -107,30 +119,32 @@ dkrig_mean_all <- rep(NA, 1000)
 nn_mean_all <- rep(NA, 1000)
 
 for (curr_index in 1:10) {
-  train_index <- which(train_all_index != curr_index)
-  train_x <- sim_dat[rep_idx,train_index]
-  test_x <- sim_dat[rep_idx, -train_index]
   
+  train_index <- which(train_all_index != curr_index)
+  train_x <- s[train_index]
+  test_x <- s[-train_index]
+
   # Classical Kriging
   exp_sig_11 <- cov_mat[train_index, train_index]
   exp_sig_12 <- cov_mat[train_index, -train_index]
   exp_sig_21 <- t(exp_sig_12)
   exp_sig_22 <- cov_mat[-train_index, -train_index]
-  krig_mean_all[-train_index] <- 1 + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_x - 1), ncol = 1 )
+  krig_mean_all[-train_index] <- 1 + exp_sig_21 %*% solve(exp_sig_11) %*% 
+                               matrix( as.numeric(sim_dat[rep_idx,train_index] - 1), ncol = 1 )
+
   
   # dnn_mean_all 
   
-  model_dnn <- keras_model_sequential()
+
   
   x_tr <- cbind(1, matrix(as.numeric(train_x), ncol = 1))
   x_te <- cbind(1, matrix(as.numeric(test_x), ncol = 1))
-  x_tr <- array_reshape(x_tr, c(nrow(x_tr), 2))  
-  x_te <- array_reshape(x_te, c(nrow(x_te), 2))  
-
-
+  # x_tr <- array_reshape(x_tr, c(nrow(x_tr), 2))  
+  # x_te <- array_reshape(x_te, c(nrow(x_te), 2))  
+  
   z_tr <- as.numeric(sim_dat[rep_idx,train_index])
   z_te <- as.numeric(sim_dat[rep_idx,-train_index])
-  
+  model_dnn <- keras_model_sequential()
   model_dnn %>% 
   layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
   layer_dropout(rate = 0.4) %>% 
@@ -155,7 +169,7 @@ for (curr_index in 1:10) {
   
   # deep Kriging with Basis Function
   
-  x_dk <- cbind(1, matrix(as.numeric(sim_dat[rep_idx,]), ncol = 1), basis_fun_all)
+  x_dk <- cbind(1, matrix(as.numeric(s), ncol = 1), basis_fun_all)
   
   train_x <- x_dk[train_index,]
   test_x <- x_dk[-train_index,]
@@ -188,30 +202,35 @@ for (curr_index in 1:10) {
   
 }
 
-  
-res_krig <- as.numeric(krig_mean_all - sim_dat[rep_idx,])
-res_dnn <- as.numeric(nn_mean_all - sim_dat[rep_idx,])
-res_dkrig <- as.numeric(dkrig_mean_all - sim_dat[rep_idx,])
+
 
 ```
 ```{r}
 ggplot() +
-  
   geom_path(aes(x = 1:1000, y = krig_mean_all, color = "Kriging")) +
   geom_path(aes(x = 1:1000, y = nn_mean_all, color = "DNN")) +
   geom_path(aes(x = 1:1000, y = dkrig_mean_all, color = "DeepKriging"))+ 
-
   geom_point( aes(x = 1:1000, y = as.numeric(sim_dat[rep_idx,])), size = 0.5) +
   labs(x = "S", y = "Z") 
 ```
 
 
 ```{r}
+  
+res_krig <- as.numeric(krig_mean_all - sim_dat[rep_idx,])
+res_dnn <- as.numeric(nn_mean_all - sim_dat[rep_idx,])
+res_dkrig <- as.numeric(dkrig_mean_all - sim_dat[rep_idx,])
+
 ggplot() +
   geom_density(aes(x = as.numeric(res_krig), color = "Kriging")) +
   labs(x = "Residuals", y = "Density") +
   geom_density(aes(x = as.numeric(res_dnn), color = "DNN")) +
   geom_density(aes(x = as.numeric(res_dkrig), color = "DeepKriging")) 
   
+```
+```{r}
+mean(res_krig^2)
+mean(res_dnn^2)
+mean(res_dkrig^2)
 ```
 
