@@ -41,5 +41,8 @@ for (curr_name in missing_names) {
   
 }
 
+loc_joined$long <- as.numeric(loc_joined$long)
+loc_joined$lat <- as.numeric(loc_joined$lat)
+
 
 sum(is.na(loc_dat$long))
