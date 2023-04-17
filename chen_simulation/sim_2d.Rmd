@@ -31,16 +31,6 @@ nychka_fun <- function(spdist, theta){
   basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
   basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
   
-  basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
-  basis_dist_2 <- spDists(as.matrix(sim_coords), as.matrix(basis_2))
-  basis_dist_3 <- spDists(as.matrix(sim_coords), as.matrix(basis_3))
-  theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
-  theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
-  theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
-  
-  basis_fun_1 <- matrix(nychka_fun(basis_dist_1, theta = theta_1), nrow = nrow(sim_coords))
-  basis_fun_2 <- matrix(nychka_fun(basis_dist_2, theta = theta_2), nrow = nrow(sim_coords))
-  basis_fun_3 <- matrix(nychka_fun(basis_dist_3, theta = theta_3), nrow = nrow(sim_coords))
 
 ```
 In this file, we simulate the data and evaluate the performance of the 2-D non-stationary data. The data follows a process like follows:
@@ -56,6 +46,18 @@ ggplot() +
   geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
   scale_fill_viridis_c() + 
   labs(x = "Longitude",  y = "Latitude")
+
+  basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
+  basis_dist_2 <- spDists(as.matrix(sim_coords), as.matrix(basis_2))
+  basis_dist_3 <- spDists(as.matrix(sim_coords), as.matrix(basis_3))
+  theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
+  theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
+  theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
+  
+  basis_fun_1 <- matrix(nychka_fun(basis_dist_1, theta = theta_1), nrow = nrow(sim_coords))
+  basis_fun_2 <- matrix(nychka_fun(basis_dist_2, theta = theta_2), nrow = nrow(sim_coords))
+  basis_fun_3 <- matrix(nychka_fun(basis_dist_3, theta = theta_3), nrow = nrow(sim_coords))
+  
 ```
 ```{r}
 # Kriging with Matern function
@@ -113,6 +115,10 @@ model_dnn %>%
   layer_dropout(rate = 0.4) %>%
   layer_dense(units = 128, activation = 'relu') %>%
   layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 128, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 128, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 1, activation = 'linear')
 
 model_dnn %>% compile(
@@ -147,6 +153,10 @@ model_dk %>%
   layer_dropout(rate = 0.4) %>% 
   layer_dense(units = 256, activation = 'relu') %>% 
   layer_dropout(rate = 0.4) %>%
+  layer_dense(units = 128, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 128, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 128, activation = 'relu') %>%
   layer_dropout(rate = 0.2) %>%
   layer_dense(units = 1, activation = 'linear')
@@ -186,6 +196,9 @@ p_dk <-
 
 ```
 ```{r}
+p_krig
+p_dnn
+p_dk
 mean((krig_mean_all - sim_y)^2)
 mean((nn_mean_all - sim_y)^2)
 mean((dkrig_mean_all - sim_y)^2)

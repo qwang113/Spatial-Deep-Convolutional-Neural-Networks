@@ -1,0 +1,340 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Chen Simulation 2d},
+  pdfauthor={Qi},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Chen Simulation 2d}
+\author{Qi}
+\date{2023-04-15}
+
+\begin{document}
+\maketitle
+
+In this file, we simulate the data and evaluate the performance of the
+2-D non-stationary data. The data follows a process like follows:
+\[Y(s) = sin\{30(\bar{s}-0.9)^4\}cos\{ 2(\bar{s}-0.9)\} + (\bar{s}-0.9)/2\]
+
+where \(s = (s_x, s_y)^T \in R^2\) and \(\bar{s}= \frac{s_x+s_y}{2}\).
+And the range of the coordinates are \([0,1]\) and there are 900 samples
+from the grid 30 by 30 in surface \([0,1]^2\). And here a three level
+multi-resolution model is used to generate the basis function, the basis
+are generated in the grid of 10 by 10, 19 by 19 and 37 by 37.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sim\_coords }\OtherTok{\textless{}{-}} \FunctionTok{expand.grid}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{1}\NormalTok{,}\AttributeTok{length.out =} \DecValTok{30}\NormalTok{),}\FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{1}\NormalTok{,}\AttributeTok{length.out =} \DecValTok{30}\NormalTok{))}
+\NormalTok{sim\_sbar }\OtherTok{\textless{}{-}}\NormalTok{ (sim\_coords[,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{+}\NormalTok{ sim\_coords[,}\DecValTok{2}\NormalTok{])}\SpecialCharTok{/}\DecValTok{2}
+\NormalTok{sim\_y }\OtherTok{\textless{}{-}} \FunctionTok{sin}\NormalTok{(}\DecValTok{30}\SpecialCharTok{*}\NormalTok{(sim\_sbar}\FloatTok{{-}0.9}\NormalTok{)}\SpecialCharTok{\^{}}\DecValTok{4}\NormalTok{) }\SpecialCharTok{*} \FunctionTok{cos}\NormalTok{(}\DecValTok{2}\SpecialCharTok{*}\NormalTok{(sim\_sbar}\FloatTok{{-}0.9}\NormalTok{)) }\SpecialCharTok{+}\NormalTok{ (sim\_sbar}\FloatTok{{-}0.9}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}
+\NormalTok{p\_obs }\OtherTok{\textless{}{-}} 
+\FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{geom\_raster}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ sim\_coords[,}\DecValTok{1}\NormalTok{], }\AttributeTok{y =}\NormalTok{ sim\_coords[,}\DecValTok{2}\NormalTok{], }\AttributeTok{fill =}\NormalTok{ sim\_y)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_viridis\_c}\NormalTok{() }\SpecialCharTok{+} 
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Longitude"}\NormalTok{,  }\AttributeTok{y =} \StringTok{"Latitude"}\NormalTok{)}
+
+\NormalTok{  basis\_dist\_1 }\OtherTok{\textless{}{-}} \FunctionTok{spDists}\NormalTok{(}\FunctionTok{as.matrix}\NormalTok{(sim\_coords), }\FunctionTok{as.matrix}\NormalTok{(basis\_1))}
+\NormalTok{  basis\_dist\_2 }\OtherTok{\textless{}{-}} \FunctionTok{spDists}\NormalTok{(}\FunctionTok{as.matrix}\NormalTok{(sim\_coords), }\FunctionTok{as.matrix}\NormalTok{(basis\_2))}
+\NormalTok{  basis\_dist\_3 }\OtherTok{\textless{}{-}} \FunctionTok{spDists}\NormalTok{(}\FunctionTok{as.matrix}\NormalTok{(sim\_coords), }\FunctionTok{as.matrix}\NormalTok{(basis\_3))}
+\NormalTok{  theta\_1 }\OtherTok{\textless{}{-}} \FloatTok{2.5}\SpecialCharTok{*} \FunctionTok{diff}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\AttributeTok{from =} \DecValTok{0}\NormalTok{, }\AttributeTok{to =} \DecValTok{1}\NormalTok{, }\AttributeTok{length.out =} \DecValTok{10}\NormalTok{))[}\DecValTok{1}\NormalTok{]}
+\NormalTok{  theta\_2 }\OtherTok{\textless{}{-}} \FloatTok{2.5}\SpecialCharTok{*} \FunctionTok{diff}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\AttributeTok{from =} \DecValTok{0}\NormalTok{, }\AttributeTok{to =} \DecValTok{1}\NormalTok{, }\AttributeTok{length.out =} \DecValTok{19}\NormalTok{))[}\DecValTok{1}\NormalTok{]}
+\NormalTok{  theta\_3 }\OtherTok{\textless{}{-}} \FloatTok{2.5}\SpecialCharTok{*} \FunctionTok{diff}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\AttributeTok{from =} \DecValTok{0}\NormalTok{, }\AttributeTok{to =} \DecValTok{1}\NormalTok{, }\AttributeTok{length.out =} \DecValTok{37}\NormalTok{))[}\DecValTok{1}\NormalTok{]}
+  
+\NormalTok{  basis\_fun\_1 }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\FunctionTok{nychka\_fun}\NormalTok{(basis\_dist\_1, }\AttributeTok{theta =}\NormalTok{ theta\_1), }\AttributeTok{nrow =} \FunctionTok{nrow}\NormalTok{(sim\_coords))}
+\NormalTok{  basis\_fun\_2 }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\FunctionTok{nychka\_fun}\NormalTok{(basis\_dist\_2, }\AttributeTok{theta =}\NormalTok{ theta\_2), }\AttributeTok{nrow =} \FunctionTok{nrow}\NormalTok{(sim\_coords))}
+\NormalTok{  basis\_fun\_3 }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\FunctionTok{nychka\_fun}\NormalTok{(basis\_dist\_3, }\AttributeTok{theta =}\NormalTok{ theta\_3), }\AttributeTok{nrow =} \FunctionTok{nrow}\NormalTok{(sim\_coords))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Kriging with Matern function}
+
+\CommentTok{\# likfit(coords = sim\_coords, data = sim\_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE)}
+\end{Highlighting}
+\end{Shaded}
+
+By applying the likfit function, we can get the MLE of the estimation of
+the Matern kernel parameters, and the MLE is
+\(\phi = 4.2183, \kappa=0.5\). That's just exponential correlation
+function with range 4.2183. And the \(\sigma^2=0.1234\), with an
+intercept \(\beta_0 = -0.1168\)
+
+Therefore the estimated processes of this is :
+\[\hat{Y}(s) = -0.1168 + \epsilon(s)\] where
+\(\epsilon(s) \sim GP(\phi = 4.2183, exp, \sigma^2 = 0.1234)\)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pair\_dist\_2d }\OtherTok{\textless{}{-}} \FunctionTok{spDists}\NormalTok{( }\FunctionTok{as.matrix}\NormalTok{(sim\_coords) )}
+\NormalTok{cov\_mat }\OtherTok{\textless{}{-}} \FloatTok{0.1234} \SpecialCharTok{*} \FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{pair\_dist\_2d}\SpecialCharTok{/}\FloatTok{4.2183}\NormalTok{)}
+\NormalTok{train\_all\_index }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{10}\NormalTok{, }\DecValTok{900}\NormalTok{, }\AttributeTok{replace =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{krig\_mean\_all }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\ConstantTok{NA}\NormalTok{, }\DecValTok{900}\NormalTok{)}
+\NormalTok{dkrig\_mean\_all }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\ConstantTok{NA}\NormalTok{, }\DecValTok{900}\NormalTok{)}
+\NormalTok{nn\_mean\_all }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\ConstantTok{NA}\NormalTok{, }\DecValTok{900}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{for}\NormalTok{ (curr\_index }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\DecValTok{10}\NormalTok{) \{}
+\NormalTok{  train\_index }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(train\_all\_index }\SpecialCharTok{!=}\NormalTok{ curr\_index)}
+\NormalTok{  train\_coords }\OtherTok{\textless{}{-}}\NormalTok{ sim\_coords[train\_index,]}
+\NormalTok{  train\_y }\OtherTok{\textless{}{-}}\NormalTok{ sim\_y[train\_index]}
+\NormalTok{  test\_coords }\OtherTok{\textless{}{-}}\NormalTok{ sim\_coords[}\SpecialCharTok{{-}}\NormalTok{train\_index,]}
+\NormalTok{  test\_y }\OtherTok{\textless{}{-}}\NormalTok{ sim\_y[}\SpecialCharTok{{-}}\NormalTok{train\_index]}
+
+  \CommentTok{\# Classical Kriging}
+\NormalTok{  exp\_sig\_11 }\OtherTok{\textless{}{-}}\NormalTok{ cov\_mat[train\_index, train\_index]}
+\NormalTok{  exp\_sig\_12 }\OtherTok{\textless{}{-}}\NormalTok{ cov\_mat[train\_index, }\SpecialCharTok{{-}}\NormalTok{train\_index]}
+\NormalTok{  exp\_sig\_21 }\OtherTok{\textless{}{-}} \FunctionTok{t}\NormalTok{(exp\_sig\_12)}
+\NormalTok{  exp\_sig\_22 }\OtherTok{\textless{}{-}}\NormalTok{ cov\_mat[}\SpecialCharTok{{-}}\NormalTok{train\_index, }\SpecialCharTok{{-}}\NormalTok{train\_index]}
+\NormalTok{  krig\_mean\_all[}\SpecialCharTok{{-}}\NormalTok{train\_index] }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\FloatTok{0.1168} \SpecialCharTok{+}\NormalTok{ exp\_sig\_21 }\SpecialCharTok{\%*\%} \FunctionTok{solve}\NormalTok{(exp\_sig\_11) }\SpecialCharTok{\%*\%} \FunctionTok{matrix}\NormalTok{( }\FunctionTok{as.numeric}\NormalTok{(train\_y }\SpecialCharTok{+} \FloatTok{0.1168}\NormalTok{), }\AttributeTok{ncol =} \DecValTok{1}\NormalTok{ )}
+  
+  
+
+
+\CommentTok{\# dnn\_mean\_all }
+ 
+\NormalTok{  x\_tr }\OtherTok{\textless{}{-}} \FunctionTok{array\_reshape}\NormalTok{( }\FunctionTok{as.matrix}\NormalTok{(train\_coords), }\FunctionTok{c}\NormalTok{(}\FunctionTok{length}\NormalTok{(train\_y), }\DecValTok{2}\NormalTok{))}
+\NormalTok{  x\_te }\OtherTok{\textless{}{-}} \FunctionTok{array\_reshape}\NormalTok{( }\FunctionTok{as.matrix}\NormalTok{(test\_coords), }\FunctionTok{c}\NormalTok{(}\FunctionTok{length}\NormalTok{(test\_y), }\DecValTok{2}\NormalTok{)) }
+
+\NormalTok{  y\_tr }\OtherTok{\textless{}{-}}\NormalTok{ train\_y}
+\NormalTok{  y\_te }\OtherTok{\textless{}{-}}\NormalTok{ test\_y}
+  
+  
+\NormalTok{model\_dnn }\OtherTok{\textless{}{-}} \FunctionTok{keras\_model\_sequential}\NormalTok{()}
+\NormalTok{model\_dnn }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{256}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}relu\textquotesingle{}}\NormalTok{, }\AttributeTok{input\_shape =} \FunctionTok{c}\NormalTok{(}\FunctionTok{ncol}\NormalTok{(x\_tr))) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dropout}\NormalTok{(}\AttributeTok{rate =} \FloatTok{0.4}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{256}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}relu\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dropout}\NormalTok{(}\AttributeTok{rate =} \FloatTok{0.4}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{128}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}relu\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{layer\_dropout}\NormalTok{(}\AttributeTok{rate =} \FloatTok{0.2}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{1}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}linear\textquotesingle{}}\NormalTok{)}
+
+\NormalTok{model\_dnn }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{compile}\NormalTok{(}
+  \AttributeTok{loss =} \StringTok{"mse"}\NormalTok{,}
+  \AttributeTok{optimizer =} \FunctionTok{optimizer\_adam}\NormalTok{(),}
+  \AttributeTok{metrics =} \FunctionTok{list}\NormalTok{(}\StringTok{"mse"}\NormalTok{)}
+\NormalTok{)}
+
+\NormalTok{mod\_train\_dnn }\OtherTok{\textless{}{-}}\NormalTok{ model\_dnn }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{x =}\NormalTok{ x\_tr, }\AttributeTok{y =}\NormalTok{ y\_tr, }\AttributeTok{epochs =} \DecValTok{30}\NormalTok{, }\AttributeTok{batch\_size =} \DecValTok{16}\NormalTok{)}
+
+  
+  
+\NormalTok{  nn\_mean\_all[}\SpecialCharTok{{-}}\NormalTok{train\_index] }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(model\_dnn, x\_te)}
+  
+  
+\NormalTok{  x\_tr }\OtherTok{\textless{}{-}} \FunctionTok{cbind}\NormalTok{(train\_coords, basis\_fun\_1[train\_index,],}
+\NormalTok{                basis\_fun\_2[train\_index,],basis\_fun\_3[train\_index,])}
+  
+\NormalTok{  x\_te }\OtherTok{\textless{}{-}} \FunctionTok{cbind}\NormalTok{(test\_coords, basis\_fun\_1[}\SpecialCharTok{{-}}\NormalTok{train\_index,],}
+\NormalTok{                basis\_fun\_2[}\SpecialCharTok{{-}}\NormalTok{train\_index,],basis\_fun\_3[}\SpecialCharTok{{-}}\NormalTok{train\_index,]) }
+  
+  
+\NormalTok{  x\_tr }\OtherTok{\textless{}{-}} \FunctionTok{array\_reshape}\NormalTok{( }\FunctionTok{as.matrix}\NormalTok{(x\_tr), }\FunctionTok{c}\NormalTok{(}\FunctionTok{length}\NormalTok{(train\_y), }\FunctionTok{ncol}\NormalTok{(x\_tr)))}
+\NormalTok{  x\_te }\OtherTok{\textless{}{-}} \FunctionTok{array\_reshape}\NormalTok{( }\FunctionTok{as.matrix}\NormalTok{(x\_te), }\FunctionTok{c}\NormalTok{(}\FunctionTok{length}\NormalTok{(test\_y), }\FunctionTok{ncol}\NormalTok{(x\_tr))) }
+  
+  
+  
+\NormalTok{model\_dk }\OtherTok{\textless{}{-}} \FunctionTok{keras\_model\_sequential}\NormalTok{()}
+\NormalTok{model\_dk }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{256}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}relu\textquotesingle{}}\NormalTok{, }\AttributeTok{input\_shape =} \FunctionTok{c}\NormalTok{(}\FunctionTok{ncol}\NormalTok{(x\_tr))) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dropout}\NormalTok{(}\AttributeTok{rate =} \FloatTok{0.4}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{256}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}relu\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{layer\_dropout}\NormalTok{(}\AttributeTok{rate =} \FloatTok{0.4}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{128}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}relu\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{layer\_dropout}\NormalTok{(}\AttributeTok{rate =} \FloatTok{0.2}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{layer\_dense}\NormalTok{(}\AttributeTok{units =} \DecValTok{1}\NormalTok{, }\AttributeTok{activation =} \StringTok{\textquotesingle{}linear\textquotesingle{}}\NormalTok{)}
+
+\NormalTok{model\_dk }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{compile}\NormalTok{(}
+  \AttributeTok{loss =} \StringTok{"mse"}\NormalTok{,}
+  \AttributeTok{optimizer =} \FunctionTok{optimizer\_adam}\NormalTok{(),}
+  \AttributeTok{metrics =} \FunctionTok{list}\NormalTok{(}\StringTok{"mse"}\NormalTok{)}
+\NormalTok{)}
+
+\NormalTok{mod\_train\_dk }\OtherTok{\textless{}{-}}\NormalTok{ model\_dk }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{fit}\NormalTok{(}\AttributeTok{x =}\NormalTok{ x\_tr, }\AttributeTok{y =}\NormalTok{ y\_tr, }\AttributeTok{epochs =} \DecValTok{30}\NormalTok{, }\AttributeTok{batch\_size =} \DecValTok{16}\NormalTok{)}
+  
+\NormalTok{  dkrig\_mean\_all[}\SpecialCharTok{{-}}\NormalTok{train\_index] }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(model\_dk, x\_te)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p\_krig }\OtherTok{\textless{}{-}}
+  \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{geom\_raster}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ sim\_coords[,}\DecValTok{1}\NormalTok{], }\AttributeTok{y =}\NormalTok{ sim\_coords[,}\DecValTok{2}\NormalTok{], }\AttributeTok{fill =}\NormalTok{ krig\_mean\_all)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_viridis\_c}\NormalTok{() }\SpecialCharTok{+} 
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Longitude"}\NormalTok{,  }\AttributeTok{y =} \StringTok{"Latitude"}\NormalTok{)}
+  
+\NormalTok{p\_dnn }\OtherTok{\textless{}{-}} 
+  \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{geom\_raster}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ sim\_coords[,}\DecValTok{1}\NormalTok{], }\AttributeTok{y =}\NormalTok{ sim\_coords[,}\DecValTok{2}\NormalTok{], }\AttributeTok{fill =}\NormalTok{ nn\_mean\_all)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_viridis\_c}\NormalTok{() }\SpecialCharTok{+} 
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Longitude"}\NormalTok{,  }\AttributeTok{y =} \StringTok{"Latitude"}\NormalTok{)}
+  
+\NormalTok{p\_dk }\OtherTok{\textless{}{-}} 
+  \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{geom\_raster}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ sim\_coords[,}\DecValTok{1}\NormalTok{], }\AttributeTok{y =}\NormalTok{ sim\_coords[,}\DecValTok{2}\NormalTok{], }\AttributeTok{fill =}\NormalTok{ dkrig\_mean\_all)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_viridis\_c}\NormalTok{() }\SpecialCharTok{+} 
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Longitude"}\NormalTok{,  }\AttributeTok{y =} \StringTok{"Latitude"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p\_krig}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{sim_2d_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p\_dnn}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{sim_2d_files/figure-latex/unnamed-chunk-6-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p\_dk}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{sim_2d_files/figure-latex/unnamed-chunk-6-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{mean}\NormalTok{((krig\_mean\_all }\SpecialCharTok{{-}}\NormalTok{ sim\_y)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.0002970992
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{mean}\NormalTok{((nn\_mean\_all }\SpecialCharTok{{-}}\NormalTok{ sim\_y)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.004294491
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{mean}\NormalTok{((dkrig\_mean\_all }\SpecialCharTok{{-}}\NormalTok{ sim\_y)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.002713995
+\end{verbatim}
+
+\end{document}
