@@ -6,6 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(reticulate)
@@ -44,7 +45,7 @@ sim_y <- sin(30*(sim_sbar-0.9)^4) * cos(2*(sim_sbar-0.9)) + (sim_sbar-0.9)/2
 p_obs <- 
 ggplot() +
   geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
   basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
@@ -77,6 +78,9 @@ train_all_index <- sample(1:10, 900, replace = TRUE)
 krig_mean_all <- rep(NA, 900)
 dkrig_mean_all <- rep(NA, 900)
 nn_mean_all <- rep(NA, 900)
+mse_vec_krig <- rep(NA, 10)
+mse_vec_nn <- rep(NA, 10)
+mse_vec_dkrig <- rep(NA, 10)
 ```
 
 
@@ -94,7 +98,8 @@ for (curr_index in 1:10) {
   exp_sig_21 <- t(exp_sig_12)
   exp_sig_22 <- cov_mat[-train_index, -train_index]
   krig_mean_all[-train_index] <- -0.1168 + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y + 0.1168), ncol = 1 )
-  
+  mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
+                                      krig_mean_all[-train_index])^2)
   
 
 
@@ -123,17 +128,15 @@ model_dnn %>%
 
 model_dnn %>% compile(
   loss = "mse",
-  optimizer = optimizer_adam(),
+  optimizer = optimizer_rmsprop(),
   metrics = list("mse")
 )
 
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 30, batch_size = 16)
+  fit(x = x_tr, y = y_tr, epochs = 30, batch_size = 32)
 
-  
-  
   nn_mean_all[-train_index] <- predict(model_dnn, x_te)
-  
+  mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
   
   x_tr <- cbind(train_coords, basis_fun_1[train_index,],
                 basis_fun_2[train_index,],basis_fun_3[train_index,])
@@ -163,14 +166,15 @@ model_dk %>%
 
 model_dk %>% compile(
   loss = "mse",
-  optimizer = optimizer_adam(),
+  optimizer = optimizer_rmsprop(),
   metrics = list("mse")
 )
 
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs = 30, batch_size = 16)
+  fit(x = x_tr, y = y_tr, epochs = 30, batch_size = 32)
   
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
+  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 }
 ```
 
@@ -179,29 +183,37 @@ mod_train_dk <- model_dk %>%
 p_krig <-
   ggplot() +
   geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = krig_mean_all)) +
-  scale_fill_viridis_c() + 
-  labs(x = "Longitude",  y = "Latitude")
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude", color = "")
   
 p_dnn <- 
   ggplot() +
   geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = nn_mean_all)) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
   
 p_dk <- 
   ggplot() +
   geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = dkrig_mean_all)) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
 ```
 ```{r}
-p_krig
-p_dnn
-p_dk
 mean((krig_mean_all - sim_y)^2)
 mean((nn_mean_all - sim_y)^2)
 mean((dkrig_mean_all - sim_y)^2)
+
+cowplot::plot_grid(p_obs, p_krig, p_dnn, p_dk)
+
+mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig))
+```
+
+
+```{r}
+ggplot() +
+  geom_boxplot(data = reshape2::melt(mse_mat), aes(x = variable, y = value)) +
+   coord_flip()
 ```
 
 
