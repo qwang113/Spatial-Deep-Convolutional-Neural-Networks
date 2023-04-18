@@ -15,6 +15,7 @@ library(tensorflow)
 library(sp)
 library(fields)
 library(geoR)
+use_condaenv("tf_gpu")
 nychka_fun <- function(spdist, theta){
   
   d <- spdist/theta
@@ -77,10 +78,12 @@ cov_mat <- 0.1234 * exp(-pair_dist_2d/4.2183)
 train_all_index <- sample(1:10, 900, replace = TRUE)
 krig_mean_all <- rep(NA, 900)
 dkrig_mean_all <- rep(NA, 900)
+ckrig_mean_all <- rep(NA, 900)
 nn_mean_all <- rep(NA, 900)
 mse_vec_krig <- rep(NA, 10)
 mse_vec_nn <- rep(NA, 10)
 mse_vec_dkrig <- rep(NA, 10)
+mse_vec_ckrig <- rep(NA,10)
 ```
 
 
@@ -175,6 +178,46 @@ mod_train_dk <- model_dk %>%
   
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
   mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
+  
+    basis_tr <- basis_fun_3[train_index,]
+  basis_te <- basis_fun_3[-train_index,]
+  
+  x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 37, 37, 1))
+  x_te <- array_reshape(basis_te, c(nrow(basis_te), 37, 37, 1))
+  
+  input_shape <- c(37, 37, 1)
+
+
+
+
+model_ck <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
+  #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
+  #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_dropout(rate = 0.1) %>% 
+  layer_flatten() %>%
+  layer_dense(units = 256, activation = 'relu') %>% 
+  layer_dropout(rate = 0.3) %>% 
+  layer_dense(units = 128, activation = 'relu') %>% 
+  layer_dropout(rate = 0.3) %>% 
+  layer_dense(units = 1, activation = 'linear')
+
+
+model_ck %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+
+
+mod_train_ck <- model_ck %>%
+  fit(x = x_tr, y = train_y, epochs = 30, batch_size = 128)
+
+ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
+  mse_vec_dkrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
+  
+  
+  
 }
 ```
 
@@ -198,15 +241,21 @@ p_dk <-
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
+p_ck <- 
+    ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = ckrig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+
 ```
 ```{r}
 mean((krig_mean_all - sim_y)^2)
 mean((nn_mean_all - sim_y)^2)
 mean((dkrig_mean_all - sim_y)^2)
+mean((ckrig_mean_all - sim_y)^2)
+cowplot::plot_grid(p_obs, p_krig, p_dnn, p_dk, p_ck)
 
-cowplot::plot_grid(p_obs, p_krig, p_dnn, p_dk)
-
-mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig))
+mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig, mse_vec_ckrig))
 ```
 
 
@@ -215,8 +264,6 @@ ggplot() +
   geom_boxplot(data = reshape2::melt(mse_mat), aes(x = variable, y = value)) +
    coord_flip()
 ```
-
-
 
 
 
