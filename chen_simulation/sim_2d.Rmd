@@ -179,7 +179,23 @@ mod_train_dk <- model_dk %>%
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
   mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
   
-    basis_tr <- basis_fun_3[train_index,]
+
+}
+```
+
+
+
+
+
+```{r}
+for (curr_index in 1:10) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  basis_tr <- basis_fun_3[train_index,]
   basis_te <- basis_fun_3[-train_index,]
   
   x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 37, 37, 1))
@@ -214,13 +230,11 @@ mod_train_ck <- model_ck %>%
   fit(x = x_tr, y = train_y, epochs = 30, batch_size = 128)
 
 ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
-  mse_vec_dkrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
+  mse_vec_ckrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
   
+}  
   
-  
-}
 ```
-
 
 ```{r}
 p_krig <-
@@ -248,6 +262,8 @@ p_ck <-
   labs(x = "Longitude",  y = "Latitude")
 
 ```
+
+
 ```{r}
 mean((krig_mean_all - sim_y)^2)
 mean((nn_mean_all - sim_y)^2)
