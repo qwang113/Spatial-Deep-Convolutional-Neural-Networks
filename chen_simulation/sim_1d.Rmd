@@ -146,14 +146,20 @@ for (curr_index in 1:10) {
   z_te <- as.numeric(sim_dat[rep_idx,-train_index])
   model_dnn <- keras_model_sequential()
   model_dnn %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 256, activation = 'relu') %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 256, activation = 'relu') %>%
-  layer_dropout(rate = 0.4) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 1, activation = 'linear')
   
   model_dnn %>% compile(
@@ -163,7 +169,7 @@ for (curr_index in 1:10) {
   )
 
   mod_train_dnn <- model_dnn %>%
-    fit(x = x_tr, y = z_tr, epochs = 30, batch_size = 128)
+    fit(x = x_tr, y = z_tr, epochs = 100, batch_size = 32)
 
   nn_mean_all[-train_index] <- predict(model_dnn, x_te)
   
@@ -233,9 +239,9 @@ ggplot() +
   
 ```
 ```{r}
-mean(res_krig^2)
-mean(res_dnn^2)
-mean(res_dkrig^2)
+sqrt(mean(res_krig^2))
+sqrt(mean(res_dnn^2))
+sqrt(mean(res_dkrig^2))
 ```
 
 
