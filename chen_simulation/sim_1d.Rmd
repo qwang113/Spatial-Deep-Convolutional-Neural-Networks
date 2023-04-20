@@ -14,18 +14,17 @@ library(keras)
 library(tensorflow)
 library(sp)
 library(fields)
-
-nychka_fun <- function(center_coords , obs_coords, theta){
+use_condaenv("tf_gpu")
+nychka_fun <- function(spdist, theta){
   
-  d <- sqrt( (center_coords[1] - obs_coords[1])^2 + (center_coords[2]- obs_coords[2])^2)/theta
+  d <- spdist/theta
   
-  if(d > 1 )
-  {
-    out <- 0
-  }else{
-    out <- (1-d)^6 * (35*d^2 + 18*d + 3)/3
-  }
+  out <- rep(NA, length(spdist))
   
+  
+  out[which(d > 1)] <- 0
+  non_0 <- which(d<=1)
+  out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
   return(out)
 }
 
@@ -78,33 +77,21 @@ plot(x = 1:1000, sim_dat[1,], type = 'l', ylim = c(min(sim_dat)-0.3, max(sim_dat
   basis_3 <- seq(from = 0, to = 1, length.out = 37)
   basis_4 <- seq(from = 0, to = 1, length.out = 73) 
   
-  basis_fun_1 <- matrix(NA, nrow = 1000, ncol = length(basis_1))
-  basis_fun_2 <- matrix(NA, nrow = 1000, ncol = length(basis_2))
-  basis_fun_3 <- matrix(NA, nrow = 1000, ncol = length(basis_3))
-  basis_fun_4 <- matrix(NA, nrow = 1000, ncol = length(basis_4))
+  basis_dist_1 <- spDists(cbind(1,s), cbind(1, basis_1))
+  basis_dist_2 <- spDists(cbind(1,s), cbind(1, basis_2))
+  basis_dist_3 <- spDists(cbind(1,s), cbind(1, basis_3))
+  basis_dist_4 <- spDists(cbind(1,s), cbind(1, basis_4))
   
-  for (i in 1:1000) {
-    
-    for (j in 1:length(basis_1)) {
-      basis_fun_1[i,j] <- nychka_fun(center_coords = cbind(1, basis_1)[j,], obs_coords = cbind(1,s)[i,],
-                                     theta = diff(basis_1)[1])
-    }
-     for (j in 1:length(basis_2)) {
-      basis_fun_2[i,j] <- nychka_fun(center_coords = cbind(1, basis_2)[j,], obs_coords = cbind(1,s)[i,],
-                                     theta = diff(basis_2)[1])
-     }
-     for (j in 1:length(basis_3)) {
-      basis_fun_3[i,j] <- nychka_fun(center_coords = cbind(1, basis_3)[j,], obs_coords = cbind(1,s)[i,],
-                                     theta = diff(basis_3)[1])
-     }
-     for (j in 1:length(basis_4)) {
-      basis_fun_4[i,j] <- nychka_fun(center_coords = cbind(1, basis_4)[j,], obs_coords = cbind(1,s)[i,],
-                                     theta = diff(basis_4)[1])
-    }
-    
-  }  
-
-   
+  theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
+  theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
+  theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
+  theta_4 <- 2.5* diff(seq(from = 0, to = 1, length.out = 73))[1]
+  
+  basis_fun_1 <- matrix(nychka_fun(basis_dist_1, theta_1), nrow = length(s))
+  basis_fun_2 <- matrix(nychka_fun(basis_dist_2, theta_2), nrow = length(s))
+  basis_fun_3 <- matrix(nychka_fun(basis_dist_3, theta_3), nrow = length(s))
+  basis_fun_4 <- matrix(nychka_fun(basis_dist_4, theta_4), nrow = length(s))
+  
   basis_fun_all <- cbind(basis_fun_1,basis_fun_2,basis_fun_3,basis_fun_4)
   
 
@@ -112,54 +99,135 @@ plot(x = 1:1000, sim_dat[1,], type = 'l', ylim = c(min(sim_dat)-0.3, max(sim_dat
 
 ```{r}
 # Classical Kriging with true covariance function
-rep_idx <- 1
+pred_grid <- seq(from = 0, to = 1, length.out = 200)
+krig_mse <- rep(NA, 100)
+mkrig_mse <- rep(NA, 100)
+dkrig_mse <- rep(NA, 100)
+ckrig_mse<- rep(NA, 100)
+nn_mse <- rep(NA, 100)
 
-train_all_index <- sample(1:10, 1000, replace = TRUE)
+krig_grid_pred <- matrix(NA, ncol = 200, nrow = 100)
+mkrig_grid_pred <- matrix(NA, ncol = 200, nrow = 100)
+dkrig_grid_pred <- matrix(NA, ncol = 200, nrow = 100)
+ckrig_grid_pred <- matrix(NA, ncol = 200, nrow = 100)
+nn_grid_pred <- matrix(NA, ncol = 200, nrow = 100)
 
-krig_mean_all <- rep(NA, 1000)
-dkrig_mean_all <- rep(NA, 1000)
-nn_mean_all <- rep(NA, 1000)
+```
 
-for (curr_index in 1:10) {
+
+```{r}
+for (rep_idx in 1:100) {
+print(paste("Now calculating the index ",rep_idx))
   
-  train_index <- which(train_all_index != curr_index)
-  train_x <- s[train_index]
-  test_x <- s[-train_index]
+train_index <- sample(1:1000, 800, replace = FALSE)
+train_x <- s[train_index]
+test_x <- s[-train_index]
+train_y <- sim_dat[rep_idx,train_index]
+test_y <- sim_dat[rep_idx,-train_index]
 
-  # Classical Kriging
-  exp_sig_11 <- cov_mat[train_index, train_index]
-  exp_sig_12 <- cov_mat[train_index, -train_index]
-  exp_sig_21 <- t(exp_sig_12)
-  exp_sig_22 <- cov_mat[-train_index, -train_index]
-  krig_mean_all[-train_index] <- 1 + exp_sig_21 %*% solve(exp_sig_11) %*% 
+exp_sig_11 <- cov_mat[train_index, train_index]
+exp_sig_12 <- cov_mat[train_index, -train_index]
+exp_sig_21 <- t(exp_sig_12)
+exp_sig_22 <- cov_mat[-train_index, -train_index]
+krig_mean_temp <- 1 + exp_sig_21 %*% solve(exp_sig_11) %*% 
                                matrix( as.numeric(sim_dat[rep_idx,train_index] - 1), ncol = 1 )
+krig_mse[rep_idx] <- mean((krig_mean_temp - as.numeric(test_y))^2)
+  
+dist_pred <- spDists(cbind(1, c(train_x,pred_grid)))
+cov_pred <- exp_cor(dist_pred)
+grid_sig_11 <- cov_pred[(1:length(train_x)),(1:length(train_x))]  
+grid_sig_12 <- cov_pred[(1:length(train_x)),((length(train_x)+1):nrow(cov_pred))]
+grid_sig_21 <- t(grid_sig_12)
+grid_sig_22 <- cov_pred[((length(train_x)+1):nrow(cov_pred)),((length(train_x)+1):nrow(cov_pred))]
+krig_grid_pred[rep_idx,] <-  1 + grid_sig_21 %*% solve(grid_sig_11) %*% 
+                               matrix( as.numeric(train_y) - 1, ncol = 1 )
+}
+```
+```{r}
+neg_llh_matern <- function(params){
+  mu <- params[1]
+  phi <- params[2]
+  sig <- params[3]
+  out <- mvtnorm::dmvnorm(curr_sim_y, mean = rep(mu, length(curr_sim_y)), 
+                          sigma = sig* Matern( spDists(cbind(1,s)), range = phi, nu = 1.5), log = TRUE )
+  return(-out)
+  
+}
 
+for (rep_idx in 1:100) {
+print(paste("Now calculating the index ",rep_idx))
   
-  # dnn_mean_all 
+train_index <- sample(1:1000, 800, replace = FALSE)
+train_x <- s[train_index]
+test_x <- s[-train_index]
+train_y <- sim_dat[rep_idx,train_index]
+test_y <- sim_dat[rep_idx,-train_index]
+
+curr_sim_y <- as.numeric(sim_dat[rep_idx,])
+curr_params <- optim(c(1,0.1,1), neg_llh_matern)$par
+curr_mu <- curr_params[1]
+curr_phi <- curr_params[2]
+curr_sig <- curr_params[3]
+curr_cov_mat <- curr_sig * Matern( spDists(cbind(1,s)), range = curr_phi, nu = 1.5)
+
+
+mat_sig_11 <- curr_cov_mat[train_index, train_index]
+mat_sig_12 <- curr_cov_mat[train_index, -train_index]
+mat_sig_21 <- t(mat_sig_12)
+mat_sig_22 <- curr_cov_mat[-train_index, -train_index]
+mkrig_mean_temp <- curr_mu + mat_sig_21 %*% solve(mat_sig_11) %*% 
+                               matrix( as.numeric(sim_dat[rep_idx,train_index] - curr_mu), ncol = 1 )
+
+mkrig_mse[rep_idx] <- mean((mkrig_mean_temp - as.numeric(test_y))^2)
   
-  x_tr <- cbind(1, matrix(as.numeric(train_x), ncol = 1))
-  x_te <- cbind(1, matrix(as.numeric(test_x), ncol = 1))
-  x_tr <- array_reshape(x_tr, c(nrow(x_tr), 2))  
-  x_te <- array_reshape(x_te, c(nrow(x_te), 2))  
+dist_pred <- spDists(cbind(1, c(train_x,pred_grid)))
+cov_pred <- Matern(dist_pred, range = curr_phi, nu = 1.5)
+
+grid_sig_11 <- cov_pred[(1:length(train_x)),(1:length(train_x))]  
+grid_sig_12 <- cov_pred[(1:length(train_x)),((length(train_x)+1):nrow(cov_pred))]
+grid_sig_21 <- t(grid_sig_12)
+grid_sig_22 <- cov_pred[((length(train_x)+1):nrow(cov_pred)),((length(train_x)+1):nrow(cov_pred))]
+mkrig_grid_pred[rep_idx,] <-  curr_mu + grid_sig_21 %*% solve(grid_sig_11) %*% 
+                               matrix( as.numeric(train_y) - curr_mu, ncol = 1 )
+
+
+
+}
+
+
+
+```
+
+
+```{r}
+for (rep_idx in 1:100) {
+print(paste("Now calculating the index ",rep_idx))
   
-  z_tr <- as.numeric(sim_dat[rep_idx,train_index])
-  z_te <- as.numeric(sim_dat[rep_idx,-train_index])
+train_index <- sample(1:1000, 800, replace = FALSE)
+train_x <- s[train_index]
+test_x <- s[-train_index]
+train_y <- sim_dat[rep_idx,train_index]
+test_y <- sim_dat[rep_idx,-train_index]
+
+
+x_tr <- cbind(1, matrix(as.numeric(train_x), ncol = 1))
+x_te <- cbind(1, matrix(as.numeric(test_x), ncol = 1))
+x_tr <- array_reshape(x_tr, c(nrow(x_tr), 2))  
+x_te <- array_reshape(x_te, c(nrow(x_te), 2))  
+  
+z_tr <- as.numeric(sim_dat[rep_idx,train_index])
+z_te <- as.numeric(sim_dat[rep_idx,-train_index])
+  
   model_dnn <- keras_model_sequential()
+  
   model_dnn %>% 
   layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.2) %>% 
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dropout(rate = 0.2) %>% 
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dropout(rate = 0.2) %>% 
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
   layer_dense(units = 1, activation = 'linear')
   
   model_dnn %>% compile(
@@ -171,33 +239,48 @@ for (curr_index in 1:10) {
   mod_train_dnn <- model_dnn %>%
     fit(x = x_tr, y = z_tr, epochs = 100, batch_size = 32)
 
-  nn_mean_all[-train_index] <- predict(model_dnn, x_te)
+  nn_mean_temp <- predict(model_dnn, x_te)
   
-  # deep Kriging with Basis Function
+  nn_mse[rep_idx] <- mean((krig_mean_temp - as.numeric(test_y))^2)
   
-  x_dk <- cbind(1, matrix(as.numeric(s), ncol = 1), basis_fun_all)
+  nn_grid_pred[rep_idx,] <- predict(model_dnn, cbind(1, pred_grid))
+}
+
+```
+
+
+
+
+```{r}
+
+for (rep_idx in 1:100) {
   
-  train_x <- x_dk[train_index,]
-  test_x <- x_dk[-train_index,]
+  print(paste("Now calculating the index ",rep_idx))
   
-  x_tr <- array_reshape(train_x, c(nrow(train_x), ncol(train_x)))  
-  x_te <- array_reshape(test_x, c(nrow(test_x), ncol(test_x)))  
- 
+  train_index <- sample(1:1000, 800, replace = FALSE)
+  train_x <- s[train_index]
+  test_x <- s[-train_index]
+  train_y <- sim_dat[rep_idx,train_index]
+  test_y <- sim_dat[rep_idx,-train_index]
+
+  x_tr <- cbind(1, matrix(as.numeric(train_x), ncol = 1), basis_fun_all[train_index,])
+  x_te <- cbind(1, matrix(as.numeric(test_x), ncol = 1), basis_fun_all[-train_index,])
+  
   z_tr <- as.numeric(sim_dat[rep_idx,train_index])
   z_te <- as.numeric(sim_dat[rep_idx,-train_index])
   
   model_dk <- keras_model_sequential()
   
   model_dk %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
   layer_dense(units = 1, activation = 'linear')
+  
   
   model_dk %>% compile(
     loss = "mse",
@@ -206,42 +289,118 @@ for (curr_index in 1:10) {
   )
 
   mod_train_dk <- model_dk %>%
-    fit(x = x_tr, y = z_tr, epochs = 30, batch_size = 128, validation_split = 0.1)
+    fit(x = x_tr, y = z_tr, epochs = 100, batch_size = 32)
 
-  dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
+  dkrig_mean_temp <- predict(model_dk, x_te)
+  dkrig_mse[rep_idx] <- mean((dkrig_mean_temp - as.numeric(test_y))^2)
   
+  pred_dist_1 <- spDists(cbind(1, pred_grid), cbind(1, basis_1))
+  pred_dist_2 <- spDists(cbind(1, pred_grid), cbind(1, basis_2))
+  pred_dist_3 <- spDists(cbind(1, pred_grid), cbind(1, basis_3))
+  pred_dist_4 <- spDists(cbind(1, pred_grid), cbind(1, basis_4))
+  
+  pred_basis_1 <- matrix(nychka_fun(pred_dist_1, theta_1), nrow = length(pred_grid))
+  pred_basis_2 <- matrix(nychka_fun(pred_dist_2, theta_2), nrow = length(pred_grid))
+  pred_basis_3 <- matrix(nychka_fun(pred_dist_3, theta_3), nrow = length(pred_grid))
+  pred_basis_4 <- matrix(nychka_fun(pred_dist_4, theta_4), nrow = length(pred_grid))
+  
+  pred_basis_all <- cbind(pred_basis_1,pred_basis_2,pred_basis_3,pred_basis_4)
+  
+  x_pre <- cbind(1, pred_grid, pred_basis_all)
+  
+  dkrig_grid_pred[rep_idx,] <- predict(model_dk, x_pre)
 }
 
 
 
 ```
+
+
 ```{r}
+for (rep_idx in 1:100) {
+  
+  print(paste("Now calculating the index ",rep_idx))
+  
+  train_index <- sample(1:1000, 800, replace = FALSE)
+  train_x <- s[train_index]
+  test_x <- s[-train_index]
+  train_y <- sim_dat[rep_idx,train_index]
+  test_y <- sim_dat[rep_idx,-train_index]
+
+  x_tr <- cbind(1, matrix(as.numeric(train_x), ncol = 1), basis_fun_4[train_index,])
+  x_te <- cbind(1, matrix(as.numeric(test_x), ncol = 1), basis_fun_4[-train_index,])
+  x_tr <- array_reshape(x_tr, c(length(train_y), 75, 1))
+  x_te <- array_reshape(x_te, c(length(test_y), 75, 1))
+  
+  input_shape <- c(75, 1)
+  
+  z_tr <- as.numeric(sim_dat[rep_idx,train_index])
+  z_te <- as.numeric(sim_dat[rep_idx,-train_index])
+  
+  model_ck <- keras_model_sequential() %>%
+  layer_conv_1d(filters = 64, kernel_size = 3, activation = 'relu', input_shape = input_shape) %>% 
+  layer_flatten() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'linear')
+
+
+model_ck %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+
+
+mod_train_ck <- model_ck %>%
+  fit(x = x_tr, y = z_tr, epochs = 100, batch_size = 32)
+
+  ckrig_mean_temp <- predict(model_ck, x_te)
+  ckrig_mse[rep_idx] <- mean((ckrig_mean_temp - as.numeric(test_y))^2)
+  
+  pred_dist_4 <- spDists(cbind(1, pred_grid), cbind(1, basis_4))
+  
+  pred_basis_4 <- matrix(nychka_fun(pred_dist_4, theta_4), nrow = length(pred_grid))
+  
+  x_pre <- cbind(1, pred_grid, pred_basis_4)
+  
+  x_pre <- array_reshape(x_pre, c(length(pred_grid), 75, 1))
+  
+  ckrig_grid_pred[rep_idx,] <- predict(model_ck, x_pre)
+  
+}
+
+
+
+
+```
+
+
+
+```{r}
+show_idx <- 77
 ggplot() +
-  geom_path(aes(x = 1:1000, y = krig_mean_all, color = "Kriging")) +
-  geom_path(aes(x = 1:1000, y = nn_mean_all, color = "DNN")) +
-  geom_path(aes(x = 1:1000, y = dkrig_mean_all, color = "DeepKriging"))+ 
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 1000), y = krig_grid_pred[show_idx,], color = "Exp Kriging")) +
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 1000), y = nn_grid_pred[show_idx,], color = "DNN")) +
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 1000), y = dkrig_grid_pred[show_idx,], color = "Deep Kriging"))+ 
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 1000), y = mkrig_grid_pred[show_idx,], color = "Matern Kriging"))+ 
   geom_point( aes(x = 1:1000, y = as.numeric(sim_dat[rep_idx,])), size = 0.5) +
   labs(x = "S", y = "Z") 
 ```
 
 
 ```{r}
-  
-res_krig <- as.numeric(krig_mean_all - sim_dat[rep_idx,])
-res_dnn <- as.numeric(nn_mean_all - sim_dat[rep_idx,])
-res_dkrig <- as.numeric(dkrig_mean_all - sim_dat[rep_idx,])
+mse.all <- cbind(krig_mse, mkrig_mse, dkrig_mse, ckrig_mse, nn_mse)
+write.csv(mse.all, here::here("chen_simulation/mse_all.csv"), row.names = FALSE)
+write.csv(krig_grid_pred, here::here("chen_simulation/krig_grid_pred.csv"), row.names = FALSE)
+write.csv(ckrig_grid_pred, here::here("chen_simulation/ckrig_grid_pred.csv"), row.names = FALSE)
+write.csv(mkrig_grid_pred, here::here("chen_simulation/mkrig_grid_pred.csv"), row.names = FALSE)
+write.csv(dkrig_grid_pred, here::here("chen_simulation/dkrig_grid_pred.csv"), row.names = FALSE)
+write.csv(nn_grid_pred, here::here("chen_simulation/nn_grid_pred.csv"), row.names = FALSE)
 
-ggplot() +
-  geom_density(aes(x = as.numeric(res_krig), color = "Kriging")) +
-  labs(x = "Residuals", y = "Density") +
-  geom_density(aes(x = as.numeric(res_dnn), color = "DNN")) +
-  geom_density(aes(x = as.numeric(res_dkrig), color = "DeepKriging")) 
-  
 ```
-```{r}
-sqrt(mean(res_krig^2))
-sqrt(mean(res_dnn^2))
-sqrt(mean(res_dkrig^2))
-```
+
 
 
