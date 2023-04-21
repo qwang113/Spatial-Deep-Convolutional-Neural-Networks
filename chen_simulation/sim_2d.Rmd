@@ -122,16 +122,12 @@ for (curr_index in 1:10) {
   
 model_dnn <- keras_model_sequential()
 model_dnn %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 256, activation = 'relu') %>% 
-  layer_dropout(rate = 0.4) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
+  layer_batch_normalization() %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_batch_normalization() %>%
   layer_dense(units = 1, activation = 'linear')
 
 model_dnn %>% compile(
@@ -141,7 +137,7 @@ model_dnn %>% compile(
 )
 
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 30, batch_size = 32)
+  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64)
 
   nn_mean_all[-train_index] <- predict(model_dnn, x_te)
   mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
@@ -160,16 +156,14 @@ mod_train_dnn <- model_dnn %>%
   
 model_dk <- keras_model_sequential()
 model_dk %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 256, activation = 'relu') %>% 
-  layer_dropout(rate = 0.4) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_batch_normalization() %>%
   layer_dense(units = 1, activation = 'linear')
 
 model_dk %>% compile(
@@ -179,7 +173,7 @@ model_dk %>% compile(
 )
 
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs = 30, batch_size = 32)
+  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64)
   
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
   mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
@@ -215,12 +209,15 @@ model_ck <- keras_model_sequential() %>%
   layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
   #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
   #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
-  layer_dropout(rate = 0.1) %>% 
   layer_flatten() %>%
-  layer_dense(units = 256, activation = 'relu') %>% 
-  layer_dropout(rate = 0.3) %>% 
-  layer_dense(units = 128, activation = 'relu') %>% 
-  layer_dropout(rate = 0.3) %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>% 
+   layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>% 
   layer_dense(units = 1, activation = 'linear')
 
 
@@ -232,7 +229,7 @@ model_ck %>% compile(
 
 
 mod_train_ck <- model_ck %>%
-  fit(x = x_tr, y = train_y, epochs = 30, batch_size = 128)
+  fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64)
 
 ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
   mse_vec_ckrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
@@ -273,7 +270,7 @@ p_ck <-
 sqrt(mean((krig_mean_all - sim_y)^2))
 sqrt(mean((nn_mean_all - sim_y)^2))
 sqrt(mean((dkrig_mean_all - sim_y)^2))
-mean((ckrig_mean_all - sim_y)^2)
+sqrt(mean((ckrig_mean_all - sim_y)^2))
 cowplot::plot_grid(p_obs, p_krig, p_dnn, p_dk, p_ck)
 
 mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig, mse_vec_ckrig))
