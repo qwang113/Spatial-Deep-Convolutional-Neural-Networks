@@ -193,10 +193,10 @@ model_dk %>% compile(
 )
 
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64)
+  fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64)
   
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
-  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
+  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, test_y)[2]
   
 
 }
@@ -223,9 +223,7 @@ for (curr_index in 1:10) {
   input_shape <- c(37, 37, 1)
 
 
-
-
-model_ck <- keras_model_sequential() %>%
+  model_ck <- keras_model_sequential() %>%
   layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
   #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
   #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
