@@ -137,6 +137,8 @@ model_dnn %>%
   layer_batch_normalization() %>%
   layer_dense(units = 100, activation = 'relu') %>%
   layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
   layer_dense(units = 1, activation = 'linear')
 
 model_dnn %>% compile(
@@ -146,11 +148,19 @@ model_dnn %>% compile(
 )
 
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64)
+  fit(x = x_tr, y = y_tr, epochs = 500, batch_size = 64)
 
   nn_mean_all[-train_index] <- predict(model_dnn, x_te)
   mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 }
+mean(mse_vec_nn)
+p_dnn <- 
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = nn_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+# 0.00471742
+p_dnn
 ```
 
 
