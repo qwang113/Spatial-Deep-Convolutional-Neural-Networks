@@ -33,7 +33,7 @@ nychka_fun <- function(spdist, theta){
   basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
   basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
   
-
+ 
 ```
 In this file, we simulate the data and evaluate the performance of the 2-D non-stationary data. The data follows a process like follows:
 $$Y(s) = sin\{30(\bar{s}-0.9)^4\}cos\{ 2(\bar{s}-0.9)\} + (\bar{s}-0.9)/2$$
@@ -83,7 +83,7 @@ mse_vec_ckrig <- rep(NA,10)
 ```{r}
 for (curr_index in 1:10) {
   
-  print(paste("Now doing iteration ", curr_index))
+  print(paste("Now doing index ", curr_index))
   
   train_index <- which(train_all_index != curr_index)
   train_coords <- sim_coords[train_index,]
@@ -134,11 +134,8 @@ for (curr_index in 1:10) {
   model_dnn <- keras_model_sequential()
   model_dnn %>% 
   layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
-  layer_batch_normalization() %>% 
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_batch_normalization() %>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_batch_normalization() %>%
   layer_dense(units = 1, activation = 'linear')
 
   model_dnn %>% compile(
@@ -158,18 +155,10 @@ for (curr_index in 1:10) {
   fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
   model_dnn %>% load_model_weights_hdf5("best_weights.h5")
   
-  # nn_mean_curr <- predict(model_dnn, x_te)
-  # mse_vec_nn_curr <- evaluate(model_dnn, x_te, y_te)[2]
-  # model_dnn <- load_model_weights_hdf5()
+
   nn_mean_all[-train_index] <- predict(model_dnn, x_te)
   mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
-  # mse_epoch[curr_epoch] <- mse_vec_nn_curr
-  # 
-  # epoch_pred[curr_epoch,] <- evaluate(model_dnn, x_te, y_te)[2] 
-  # 
-  # curr_best_epoch <- which.min(mse_epoch)
-  # mse_vec_nn[curr_index] <- mini(mse_epoch)
-  # nn_mean_all[-train_index] <- epoch_pred[curr_best_epoch,]
+
 }
 
 
@@ -199,15 +188,9 @@ for (curr_index in 1:10) {
 model_dk <- keras_model_sequential()
 model_dk %>% 
   layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
-  layer_batch_normalization() %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_batch_normalization() %>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_batch_normalization() %>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_batch_normalization() %>%
-    layer_dense(units = 100, activation = 'relu') %>%
-  layer_batch_normalization() %>%
   layer_dense(units = 1, activation = 'linear')
 
 model_dk %>% compile(
@@ -261,13 +244,13 @@ for (curr_index in 1:10) {
   #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
   layer_flatten() %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_batch_normalization() %>%
+
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_batch_normalization() %>%
+
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_batch_normalization() %>% 
+
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_batch_normalization() %>% 
+
   layer_dense(units = 1, activation = 'linear')
 
 
@@ -336,7 +319,7 @@ write.csv(mse_mat, here::here("chen_simulation/mse_all_10_cv_2d.csv"), row.names
 
 ```{r}
 ggplot() +
-  geom_boxplot(data = reshape2::melt(sqrt(mse_mat)), aes(x = variable, y = value)) +
+  geom_boxplot(data = reshape2::melt(mse_mat), aes(x = variable, y = value)) +
    coord_flip()
 ```
 
