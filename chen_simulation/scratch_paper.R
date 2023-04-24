@@ -24,7 +24,7 @@ for (curr_index in 1:10) {
   )
   
   model_checkpoint <- callback_model_checkpoint(
-    filepath = "best_weights.h5",
+    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
     save_best_only = TRUE,
     monitor = "val_loss",
     mode = "min",
@@ -34,7 +34,7 @@ for (curr_index in 1:10) {
   mod_train_dk <- model_dk %>%
     fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64, 
         callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
-  model_dk %>% load_model_weights_hdf5("best_weights.h5")
+  model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
   
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
   mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, test_y)[2]
@@ -68,7 +68,7 @@ for (curr_index in 1:10) {
   )
   
   model_checkpoint <- callback_model_checkpoint(
-    filepath = "best_weights.h5",
+    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
     save_best_only = TRUE,
     monitor = "val_loss",
     mode = "min",
@@ -76,7 +76,7 @@ for (curr_index in 1:10) {
   )
   dnn_history <- model_dnn %>%
     fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
-  model_dnn %>% load_model_weights_hdf5("best_weights.h5")
+  model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
   
   
   nn_mean_all[-train_index] <- predict(model_dnn, x_te)
