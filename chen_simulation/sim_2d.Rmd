@@ -20,20 +20,18 @@ nychka_fun <- function(spdist, theta){
   
   d <- spdist/theta
   
-  out <- rep(NA, length(spdist))
-  
+  out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
   
   out[which(d > 1)] <- 0
   non_0 <- which(d<=1)
   out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
   return(out)
 }
+
 # Create basis function for DK
   basis_1 <- expand.grid(seq(from = 0, to = 1, length.out = 10),seq(from = 0, to = 1, length.out = 10))  
   basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
   basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
-  
- 
 ```
 In this file, we simulate the data and evaluate the performance of the 2-D non-stationary data. The data follows a process like follows:
 $$Y(s) = sin\{30(\bar{s}-0.9)^4\}cos\{ 2(\bar{s}-0.9)\} + (\bar{s}-0.9)/2$$
@@ -52,13 +50,14 @@ ggplot() +
   basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
   basis_dist_2 <- spDists(as.matrix(sim_coords), as.matrix(basis_2))
   basis_dist_3 <- spDists(as.matrix(sim_coords), as.matrix(basis_3))
+  
   theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
   theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
   theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
   
-  basis_fun_1 <- matrix(nychka_fun(basis_dist_1, theta = theta_1), nrow = nrow(sim_coords))
-  basis_fun_2 <- matrix(nychka_fun(basis_dist_2, theta = theta_2), nrow = nrow(sim_coords))
-  basis_fun_3 <- matrix(nychka_fun(basis_dist_3, theta = theta_3), nrow = nrow(sim_coords))
+  basis_fun_1 <- nychka_fun(basis_dist_1, theta = theta_1)
+  basis_fun_2 <- nychka_fun(basis_dist_2, theta = theta_2)
+  basis_fun_3 <- nychka_fun(basis_dist_3, theta = theta_3)
   
 ```
 
@@ -67,7 +66,7 @@ By applying the likfit function, we can get the MLE of the estimation of the Mat
 
 ```{r}
 pair_dist_2d <- spDists( as.matrix(sim_coords) )
-
+set.seed(0)
 train_all_index <- sample(1:10, 900, replace = TRUE)
 krig_mean_all <- rep(NA, 900)
 dkrig_mean_all <- rep(NA, 900)
@@ -310,7 +309,7 @@ sqrt(mean((krig_mean_all - sim_y)^2))
 sqrt(mean((nn_mean_all - sim_y)^2))
 sqrt(mean((dkrig_mean_all - sim_y)^2))
 sqrt(mean((ckrig_mean_all - sim_y)^2))
-cowplot::plot_grid(p_obs, p_krig, p_dnn, p_dk, p_ck)
+cowplot::plot_grid(p_krig, p_dnn, p_dk, p_ck)
 
 mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig, mse_vec_ckrig))
 write.csv(mse_mat, here::here("chen_simulation/mse_all_10_cv_2d.csv"), row.names = FALSE)
