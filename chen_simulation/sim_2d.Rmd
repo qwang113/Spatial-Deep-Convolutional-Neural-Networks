@@ -188,8 +188,11 @@ model_dk <- keras_model_sequential()
 model_dk %>% 
   layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
   layer_dense(units = 100, activation = 'relu') %>% 
+  
   layer_dense(units = 100, activation = 'relu') %>%
+  
   layer_dense(units = 100, activation = 'relu') %>%
+  
   layer_dense(units = 1, activation = 'linear')
 
 model_dk %>% compile(
