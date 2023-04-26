@@ -383,7 +383,7 @@ mod_train_ck <- model_ck %>%
 
 
 ```{r}
-show_idx <- 77
+show_idx <- 15
 ggplot() +
   geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = krig_grid_pred[show_idx,], color = "Exp Kriging")) +
   geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = nn_grid_pred[show_idx,], color = "DNN")) +
