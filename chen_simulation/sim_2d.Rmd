@@ -38,13 +38,19 @@ $$Y(s) = sin\{30(\bar{s}-0.9)^4\}cos\{ 2(\bar{s}-0.9)\} + (\bar{s}-0.9)/2$$
 
 where $s = (s_x, s_y)^T \in R^2$ and $\bar{s}= \frac{s_x+s_y}{2}$. And the range of the coordinates are $[0,1]$ and there are 900 samples from the grid 30 by 30 in surface $[0,1]^2$. And here a three level multi-resolution model is used to generate the basis function, the basis are generated in the grid of 10 by 10, 19 by 19 and 37 by 37.
 ```{r}
-sim_size = 50
-sim_coords <- expand.grid(seq(0,1,length.out = sim_size),seq(0,1,length.out = 50))
+sim_size = 30
+sim_coords <- expand.grid(seq(0,1,length.out = sim_size),seq(0,1,length.out = sim_size))
+# If try random generate observations, use following code:
+# sim_coords[,1] <- runif(sim_size^2)
+# sim_coords[,2] <- runif(sim_size^2)
 sim_sbar <- (sim_coords[,1] + sim_coords[,2])/2
+
+
 sim_y <- sin(30*(sim_sbar-0.9)^4) * cos(2*(sim_sbar-0.9)) + (sim_sbar-0.9)/2
-p_obs <- 
+
 ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
+  geom_tile(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
+  # geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
@@ -208,7 +214,7 @@ model_dk %>% compile(
 )
  
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = train_y, epochs = 500, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+  fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
   model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
   
   dkrig_mean_all[-train_index] <- predict(model_dk, x_te)

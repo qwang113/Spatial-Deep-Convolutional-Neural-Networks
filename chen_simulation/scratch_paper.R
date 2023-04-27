@@ -1,79 +1,95 @@
-max_temp <- 5
-train_temp <- sample(1:max_temp, 900, replace = TRUE)
-epoc_temp <- 100
-
-
-
-for (curr_index in 1:max_temp) {
-  train_index <- which(train_all_index != curr_index)
-  train_coords <- sim_coords[train_index,]
-  train_y <- sim_y[train_index]
-  test_coords <- sim_coords[-train_index,]
-  test_y <- sim_y[-train_index]
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reticulate)
+library(keras)
+library(tensorflow)
+library(sp)
+library(fields)
+library(geoR)
+use_condaenv("tf_gpu")
+nychka_fun <- function(spdist, theta){
   
-  x_tr <- cbind(train_coords, basis_fun_1[train_index,],
-                basis_fun_2[train_index,],basis_fun_3[train_index,])
-  x_te <- cbind(test_coords, basis_fun_1[-train_index,],
-                basis_fun_2[-train_index,],basis_fun_3[-train_index,])
-  # x_tr <- train_coords
-  # x_te <- test_coords
-  x_tr <- array_reshape( as.matrix(x_tr), c(length(train_y), ncol(x_tr)))
-  x_te <- array_reshape( as.matrix(x_te), c(length(test_y), ncol(x_te)))
+  d <- spdist/theta
   
-  model_dk <- keras_model_sequential()
-  model_dk %>% 
-    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dense(units = 1, activation = 'linear')
-  model_dk %>% compile(
-    loss = "mse",
-    optimizer = optimizer_adam(),
-    metrics = list("mse")
-  )
+  out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
   
+  out[which(d > 1)] <- 0
+  non_0 <- which(d<=1)
+  out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
+  return(out)
+}
+nychka_fun <- function(spdist, theta){
   
-  model_checkpoint <- callback_model_checkpoint(
-    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
-    save_best_only = TRUE,
-    monitor = "val_loss",
-    mode = "min",
-    verbose = 1
-  )
-  mod_train_dk <- model_dk %>%
-    fit(x = x_tr, y = train_y, epochs = epoc_temp, batch_size = 64, 
-        callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
-  model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
-  dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
-  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, test_y)[2]
+  d <- spdist/theta
   
+  out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
+  
+  out[which(d > 1)] <- 0
+  non_0 <- which(d<=1)
+  out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
+  return(out)
 }
 
+# Create basis function for DK
+basis_1 <- expand.grid(seq(from = 0, to = 1, length.out = 10),seq(from = 0, to = 1, length.out = 10))  
+basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
+basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
 
-p_dk <- 
+
+sim_size = 30
+sim_coords <- expand.grid(seq(0,1,length.out = sim_size),seq(0,1,length.out = sim_size))
+sim_sbar <- (sim_coords[,1] + sim_coords[,2])/2
+sim_y <- sin(30*(sim_sbar-0.9)^4) * cos(2*(sim_sbar-0.9)) + (sim_sbar-0.9)/2
+p_obs <- 
   ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = dkrig_mean_all)) +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
-# --------------------------------------------------------------------- DNN
+basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
+basis_dist_2 <- spDists(as.matrix(sim_coords), as.matrix(basis_2))
+basis_dist_3 <- spDists(as.matrix(sim_coords), as.matrix(basis_3))
 
-for (curr_index in 1:max_temp) {
+theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
+theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
+theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
+
+basis_fun_1 <- nychka_fun(basis_dist_1, theta = theta_1)
+basis_fun_2 <- nychka_fun(basis_dist_2, theta = theta_2)
+basis_fun_3 <- nychka_fun(basis_dist_3, theta = theta_3)
+
+pair_dist_2d <- spDists( as.matrix(sim_coords) )
+set.seed(0)
+train_all_index <- sample(1:10, sim_size^2, replace = TRUE)
+krig_mean_all <- rep(NA, sim_size^2)
+dkrig_mean_all <- rep(NA, sim_size^2)
+ckrig_mean_all <- rep(NA, sim_size^2)
+nn_mean_all <- rep(NA, sim_size^2)
+mse_vec_krig <- rep(NA, 10)
+mse_vec_nn <- rep(NA, 10)
+mse_vec_dkrig <- rep(NA, 10)
+mse_vec_ckrig <- rep(NA,10)
+
+for (curr_index in 1:10) {
   train_index <- which(train_all_index != curr_index)
   train_coords <- sim_coords[train_index,]
   train_y <- sim_y[train_index]
   test_coords <- sim_coords[-train_index,]
   test_y <- sim_y[-train_index]
   # dnn_mean_all 
+  
   x_tr <- array_reshape( as.matrix(train_coords), c(length(train_y), 2))
   x_te <- array_reshape( as.matrix(test_coords), c(length(test_y), 2)) 
+  
   y_tr <- train_y
   y_te <- test_y
-
+  # mse_epoch <- rep(NA, 200)
+  # epoch_pred <- matrix(NA, nrow = 200, ncol = length(test_y))
+  
   model_dnn <- keras_model_sequential()
   model_dnn %>% 
-    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
+    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
     layer_dense(units = 100, activation = 'relu') %>% 
     layer_dense(units = 100, activation = 'relu') %>%
     layer_dense(units = 1, activation = 'linear')
@@ -92,8 +108,7 @@ for (curr_index in 1:max_temp) {
     verbose = 1
   )
   dnn_history <- model_dnn %>%
-    fit(x = x_tr, y = y_tr, epochs = epoc_temp, batch_size = 64, 
-        callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+    fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
   model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
   
   
@@ -101,8 +116,142 @@ for (curr_index in 1:max_temp) {
   mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
   
 }
-p_dnn <- 
-  ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = nn_mean_all)) +
-  scale_fill_viridis_c(name = "") + 
-  labs(x = "Longitude",  y = "Latitude")
+
+
+
+for (curr_index in 1:10) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  x_tr <- cbind(train_coords, basis_fun_1[train_index,],
+                basis_fun_2[train_index,],basis_fun_3[train_index,])
+  
+  x_te <- cbind(test_coords, basis_fun_1[-train_index,],
+                basis_fun_2[-train_index,],basis_fun_3[-train_index,]) 
+  
+  
+  x_tr <- array_reshape( as.matrix(x_tr), c(length(train_y), ncol(x_tr)))
+  x_te <- array_reshape( as.matrix(x_te), c(length(test_y), ncol(x_tr))) 
+  
+  
+  
+  model_dk <- keras_model_sequential()
+  model_dk %>% 
+    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
+    layer_dense(units = 100, activation = 'relu') %>% 
+    
+    layer_dense(units = 100, activation = 'relu') %>%
+    
+    layer_dense(units = 1, activation = 'linear')
+  
+  model_dk %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+  model_checkpoint <- callback_model_checkpoint(
+    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+    save_best_only = TRUE,
+    monitor = "val_loss",
+    mode = "min",
+    verbose = 1
+  )
+  
+  mod_train_dk <- model_dk %>%
+    fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+  model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  
+  dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
+  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, test_y)[2]
+  
+  
+}
+
+
+for (curr_index in 1:10) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  basis_tr <- basis_fun_3[train_index,]
+  basis_te <- basis_fun_3[-train_index,]
+  
+  x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 37, 37, 1))
+  x_te <- array_reshape(basis_te, c(nrow(basis_te), 37, 37, 1))
+  
+  input_shape <- c(37, 37, 1)
+  
+  
+  model_ck <- keras_model_sequential() %>%
+    layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
+    #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
+    #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+    layer_flatten() %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    
+    layer_dense(units = 100, activation = 'relu') %>% 
+    
+    layer_dense(units = 100, activation = 'relu') %>% 
+    
+    layer_dense(units = 100, activation = 'relu') %>% 
+    
+    layer_dense(units = 1, activation = 'linear')
+  
+  
+  model_ck %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+  
+  model_checkpoint <- callback_model_checkpoint(
+    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+    save_best_only = TRUE,
+    monitor = "val_loss",
+    mode = "min",
+    verbose = 1
+  )
+  mod_train_ck <- model_ck %>%
+    fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+  model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
+  mse_vec_ckrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
+  
+}  
+
+
+for (curr_index in 1:10) {
+  
+  print(paste("Now doing index ", curr_index))
+  
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  # Change the population
+  curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
+  
+  curr_beta <- curr_res$beta
+  curr_sig <- curr_res$sigmasq
+  curr_phi <- curr_res$phi
+  curr_nu <- curr_res$kappa
+  
+  cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
+  
+  # Classical Kriging
+  exp_sig_11 <- cov_mat[train_index, train_index]
+  exp_sig_12 <- cov_mat[train_index, -train_index]
+  exp_sig_21 <- t(exp_sig_12)
+  exp_sig_22 <- cov_mat[-train_index, -train_index]
+  krig_mean_all[-train_index] <- curr_beta + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y - curr_beta), ncol = 1 )
+  mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
+                                      krig_mean_all[-train_index])^2)
+}
+
