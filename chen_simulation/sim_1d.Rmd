@@ -382,17 +382,6 @@ mod_train_ck <- model_ck %>%
 
 
 
-```{r}
-show_idx <- 15
-ggplot() +
-  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = krig_grid_pred[show_idx,], color = "Exp Kriging")) +
-  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = nn_grid_pred[show_idx,], color = "DNN")) +
-  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = dkrig_grid_pred[show_idx,], color = "Deep Kriging"))+ 
-  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = mkrig_grid_pred[show_idx,], color = "Matern Kriging"))+ 
-  geom_point( aes(x = seq(from = 0, to = 1, length.out = 1000), y = as.numeric(sim_dat[show_idx,])), size = 0.5) +
-  labs(x = "S", y = "Z") 
-```
-
 
 ```{r}
 mse.all <- cbind(krig_mse, mkrig_mse, dkrig_mse, ckrig_mse, nn_mse)
@@ -403,6 +392,39 @@ write.csv(mkrig_grid_pred, here::here("chen_simulation/mkrig_grid_pred.csv"), ro
 write.csv(dkrig_grid_pred, here::here("chen_simulation/dkrig_grid_pred.csv"), row.names = FALSE)
 write.csv(nn_grid_pred, here::here("chen_simulation/nn_grid_pred.csv"), row.names = FALSE)
 
+```
+
+
+```{r}
+show_idx <- 15
+sim_dat <- read.csv(here::here("pm_small/sim_dat.csv"))[,-1]
+krig_grid_pred <- read.csv( here::here("chen_simulation/krig_grid_pred.csv") )
+dkrig_grid_pred <- read.csv( here::here("chen_simulation/dkrig_grid_pred.csv") )
+mkrig_grid_pred <- read.csv( here::here("chen_simulation/mkrig_grid_pred.csv") )
+ckrig_grid_pred <- read.csv( here::here("chen_simulation/ckrig_grid_pred.csv") )
+nn_grid_pred <- read.csv( here::here("chen_simulation/nn_grid_pred.csv") )
+
+
+ggplot() +
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = as.numeric(krig_grid_pred[show_idx,]), color = "Exp Kriging")) +
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = as.numeric(nn_grid_pred[show_idx,]), color = "DNN")) +
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = as.numeric(dkrig_grid_pred[show_idx,]), color = "Deep Kriging"))+ 
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = as.numeric(mkrig_grid_pred[show_idx,]), color = "Matern Kriging"))+ 
+  geom_path(aes(x = seq(from = 0, to = 1, length.out = 200), y = as.numeric(ckrig_grid_pred[show_idx,]), color = "Convolutional Kriging"))+ 
+  geom_point( aes(x = seq(from = 0, to = 1, length.out = 1000), y = as.numeric(sim_dat[show_idx,])), size = 0.5) +
+  labs(x = "S", y = "Z")
+```
+
+```{r}
+mse.all <- read.csv(here::here("chen_simulation/mse_all.csv"))
+ggplot() +
+  geom_boxplot(data = reshape2::melt(mse.all), aes(x = variable, y = value)) +
+   coord_flip()
+
+mse_no_nn <- mse.all[,-5]
+ggplot() +
+  geom_boxplot(data = reshape2::melt(mse_no_nn), aes(x = variable, y = value)) +
+   coord_flip()
 ```
 
 
