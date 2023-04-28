@@ -32,7 +32,7 @@ nychka_fun <- function(spdist, theta){
 
 
 ```{r}
-sim_size = 200
+sim_size = 100
 batch_size <- 256
 num_epoch <- 1000
 egg_fun <- function(x,y){
@@ -78,7 +78,7 @@ ggplot() +
   basis_fun_2 <- nychka_fun(basis_dist_2, theta = theta_2)
   basis_fun_3 <- nychka_fun(basis_dist_3, theta = theta_3)
   basis_fun_4 <- nychka_fun(basis_dist_4, theta = theta_4)
-  #pair_dist_2d <- spDists( as.matrix(sim_coords) )
+  pair_dist_2d <- spDists( as.matrix(sim_coords) )
   set.seed(0)
   num_fold <- 5
   train_all_index <- sample(1:num_fold, sim_size^2, replace = TRUE)
@@ -93,35 +93,42 @@ ggplot() +
 ```
 
 ```{r}
-# for (curr_index in 1:num_fold) {
-#   
-#   print(paste("Now doing index ", curr_index))
-#   
-#   train_index <- which(train_all_index != curr_index)
-#   train_coords <- sim_coords[train_index,]
-#   train_y <- sim_y[train_index]
-#   test_coords <- sim_coords[-train_index,]
-#   test_y <- sim_y[-train_index]
-#   
-#   # Change the population
-#   curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
-#   
-#   curr_beta <- curr_res$beta
-#   curr_sig <- curr_res$sigmasq
-#   curr_phi <- curr_res$phi
-#   curr_nu <- curr_res$kappa
-# 
-#   cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
-# 
-#   # Classical Kriging
-#   exp_sig_11 <- cov_mat[train_index, train_index]
-#   exp_sig_12 <- cov_mat[train_index, -train_index]
-#   exp_sig_21 <- t(exp_sig_12)
-#   exp_sig_22 <- cov_mat[-train_index, -train_index]
-#   krig_mean_all[-train_index] <- curr_beta + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y - curr_beta), ncol = 1 )
-#   mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
-#                                       krig_mean_all[-train_index])^2)
-# }
+for (curr_index in 1:num_fold) {
+
+  print(paste("Now doing index ", curr_index))
+
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+
+  # Change the population
+  curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
+
+  curr_beta <- curr_res$beta
+  curr_sig <- curr_res$sigmasq
+  curr_phi <- curr_res$phi
+  curr_nu <- curr_res$kappa
+
+  cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
+
+  # Classical Kriging
+  exp_sig_11 <- cov_mat[train_index, train_index]
+  exp_sig_12 <- cov_mat[train_index, -train_index]
+  exp_sig_21 <- t(exp_sig_12)
+  exp_sig_22 <- cov_mat[-train_index, -train_index]
+  krig_mean_all[-train_index] <- curr_beta + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y - curr_beta), ncol = 1 )
+  mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
+                                      krig_mean_all[-train_index])^2)
+}
+
+beepr::beep(3)
+for (bee2 in 1:5) {
+  beepr::beep()
+  Sys.sleep(1)
+}
+
 ```
 
 ```{r}
@@ -180,7 +187,11 @@ for (curr_index in 1:num_fold) {
 
 beepr::beep(3)
 for (bee2 in 1:5) {
-  beepr::beep()
+  for(bee1 in 1:2)
+  {
+    beepr::beep()
+    Sys.sleep(0.1)
+  }
   Sys.sleep(1)
 }
   
@@ -246,7 +257,7 @@ mod_train_dk <- model_dk %>%
 
 beepr::beep(3)
 for (bee2 in 1:5) {
-  for(bee1 in 1:2)
+  for(bee1 in 1:3)
   {
     beepr::beep()
     Sys.sleep(0.1)
@@ -315,7 +326,7 @@ ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
 
 beepr::beep(3)
 for (bee2 in 1:5) {
-  for(bee1 in 1:3)
+  for(bee1 in 1:4)
   {
     beepr::beep()
     Sys.sleep(0.1)
@@ -329,6 +340,18 @@ for (bee2 in 1:5) {
 
 
 ```{r}
+p_krig <-
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = krig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude", color = "")
+  
+p_dnn <- 
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = nn_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+  
 p_dk <- 
   ggplot() +
   geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = dkrig_mean_all)) +
@@ -341,34 +364,17 @@ p_ck <-
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
-cowplot::plot_grid(p_obs, p_dk, p_ck, nrow = 1)
-```
 
-
-```{r}
-# Install the googleLanguageR package
-install.packages("googleLanguageR")
-
-# Load the package
-library(googleLanguageR)
-
-# Set up Google credentials
-googleAuthR::gar_auth()
-
-# Set the text you want to convert to speech
-my_text <- "Hello, this is R speaking!"
-
-# Generate speech using the Google Text-to-Speech API
-tts <- googleLanguageR::tts(text = my_text, voice = "en-US-Wavenet-D")
-
-# Save the audio to a file
-writeBin(tts$content, "my_speech.wav")
-
-# Play the audio
-tuneR::play("my_speech.wav")
+sqrt(mean((krig_mean_all - sim_y)^2))
+sqrt(mean((nn_mean_all - sim_y)^2))
+sqrt(mean((dkrig_mean_all - sim_y)^2))
+sqrt(mean((ckrig_mean_all - sim_y)^2))
+cowplot::plot_grid(p_krig, p_dnn, p_dk, p_ck)
 
 
 ```
+
+
 
 
 
