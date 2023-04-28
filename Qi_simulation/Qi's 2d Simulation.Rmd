@@ -6,25 +6,373 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reticulate)
+library(keras)
+library(tensorflow)
+library(sp)
+library(fields)
+library(geoR)
+library(GPfit)
+use_condaenv("tf_gpu")
+nychka_fun <- function(spdist, theta){
+  
+  d <- spdist/theta
+  
+  out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
+  
+  out[which(d > 1)] <- 0
+  non_0 <- which(d<=1)
+  out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
+  return(out)
+}
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+sim_size = 200
+batch_size <- 256
+num_epoch <- 1000
+egg_fun <- function(x,y){
+  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+sim_x1 = sim_x2 <- seq(from = -1000, to = 1000, length.out = sim_size)
 
-```{r cars}
-summary(cars)
+sim_y <- as.vector(outer(X = sim_x1, Y = sim_x2, FUN = Vectorize(egg_fun)))
+  
+sim_coords <- expand.grid(sim_x1, sim_x2)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+# Create basis function for DK
+  basis_1 <- expand.grid(seq(from = -1000, to = 1000, length.out = 10),seq(from = -1000, to = 1000, length.out = 10))  
+  basis_2 <- expand.grid(seq(from = -1000, to = 1000, length.out = 19),seq(from = -1000, to = 1000, length.out = 19))
+  basis_3 <- expand.grid(seq(from = -1000, to = 1000, length.out = 37),seq(from = -1000, to = 1000, length.out = 37))
+  basis_4 <- expand.grid(seq(from = -1000, to = 1000, length.out = 73),seq(from = -1000, to = 1000, length.out = 73))
+  
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+p_obs <- 
+ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+
+  basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
+  basis_dist_2 <- spDists(as.matrix(sim_coords), as.matrix(basis_2))
+  basis_dist_3 <- spDists(as.matrix(sim_coords), as.matrix(basis_3))
+  basis_dist_4 <- spDists(as.matrix(sim_coords), as.matrix(basis_4))
+  
+  theta_1 <- 2.5* diff(seq(from = -1000, to = 1000, length.out = 10))[1]
+  theta_2 <- 2.5* diff(seq(from = -1000, to = 1000, length.out = 19))[1]
+  theta_3 <- 2.5* diff(seq(from = -1000, to = 1000, length.out = 37))[1]
+  theta_4 <- 2.5* diff(seq(from = -1000, to = 1000, length.out = 73))[1]
+  
+  basis_fun_1 <- nychka_fun(basis_dist_1, theta = theta_1)
+  basis_fun_2 <- nychka_fun(basis_dist_2, theta = theta_2)
+  basis_fun_3 <- nychka_fun(basis_dist_3, theta = theta_3)
+  basis_fun_4 <- nychka_fun(basis_dist_4, theta = theta_4)
+  #pair_dist_2d <- spDists( as.matrix(sim_coords) )
+  set.seed(0)
+  num_fold <- 5
+  train_all_index <- sample(1:num_fold, sim_size^2, replace = TRUE)
+  krig_mean_all <- rep(NA, sim_size^2)
+  dkrig_mean_all <- rep(NA, sim_size^2)
+  ckrig_mean_all <- rep(NA, sim_size^2)
+  nn_mean_all <- rep(NA, sim_size^2)
+  mse_vec_krig <- rep(NA, num_fold)
+  mse_vec_nn <- rep(NA, num_fold)
+  mse_vec_dkrig <- rep(NA, num_fold)
+  mse_vec_ckrig <- rep(NA,num_fold)
+```
+
+```{r}
+# for (curr_index in 1:num_fold) {
+#   
+#   print(paste("Now doing index ", curr_index))
+#   
+#   train_index <- which(train_all_index != curr_index)
+#   train_coords <- sim_coords[train_index,]
+#   train_y <- sim_y[train_index]
+#   test_coords <- sim_coords[-train_index,]
+#   test_y <- sim_y[-train_index]
+#   
+#   # Change the population
+#   curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
+#   
+#   curr_beta <- curr_res$beta
+#   curr_sig <- curr_res$sigmasq
+#   curr_phi <- curr_res$phi
+#   curr_nu <- curr_res$kappa
+# 
+#   cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
+# 
+#   # Classical Kriging
+#   exp_sig_11 <- cov_mat[train_index, train_index]
+#   exp_sig_12 <- cov_mat[train_index, -train_index]
+#   exp_sig_21 <- t(exp_sig_12)
+#   exp_sig_22 <- cov_mat[-train_index, -train_index]
+#   krig_mean_all[-train_index] <- curr_beta + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y - curr_beta), ncol = 1 )
+#   mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
+#                                       krig_mean_all[-train_index])^2)
+# }
+```
+
+```{r}
+for (curr_index in 1:num_fold) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+# dnn_mean_all 
+ 
+  x_tr <- array_reshape( as.matrix(train_coords), c(length(train_y), 2))
+  x_te <- array_reshape( as.matrix(test_coords), c(length(test_y), 2)) 
+
+  y_tr <- train_y
+  y_te <- test_y
+  # mse_epoch <- rep(NA, 200)
+  # epoch_pred <- matrix(NA, nrow = 200, ncol = length(test_y))
+  
+  model_dnn <- keras_model_sequential()
+  model_dnn %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 1, activation = 'linear')
+
+  model_dnn %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+
+  model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+  dnn_history <- model_dnn %>%
+  fit(x = x_tr, y = y_tr, epochs = num_epoch, batch_size = batch_size, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+  model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  
+
+  nn_mean_all[-train_index] <- predict(model_dnn, x_te)
+  mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
+
+}
+
+# Beep when work finished
+
+
+beepr::beep(3)
+for (bee2 in 1:5) {
+  beepr::beep()
+  Sys.sleep(1)
+}
+  
+```
+
+
+```{r}
+for (curr_index in 1:num_fold) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  x_tr <- cbind(train_coords, basis_fun_1[train_index,],
+                basis_fun_2[train_index,],basis_fun_3[train_index,],basis_fun_4[train_index,])
+  
+  x_te <- cbind(test_coords, basis_fun_1[-train_index,],
+                basis_fun_2[-train_index,],basis_fun_3[-train_index,],basis_fun_4[-train_index,]) 
+  
+  
+  x_tr <- array_reshape( as.matrix(x_tr), c(length(train_y), ncol(x_tr)))
+  x_te <- array_reshape( as.matrix(x_te), c(length(test_y), ncol(x_tr))) 
+  
+  
+  
+model_dk <- keras_model_sequential()
+model_dk %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  
+  layer_dense(units = 100, activation = 'relu') %>%
+  
+  layer_dense(units = 100, activation = 'relu') %>% 
+  
+  layer_dense(units = 100, activation = 'relu') %>%
+  
+  layer_dense(units = 1, activation = 'linear')
+
+model_dk %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+ model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+ 
+mod_train_dk <- model_dk %>%
+  fit(x = x_tr, y = train_y, epochs = num_epoch, batch_size = batch_size, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+  model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  
+  dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
+  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, test_y)[2]
+  
+
+}
+# Beep when work finished
+
+beepr::beep(3)
+for (bee2 in 1:5) {
+  for(bee1 in 1:2)
+  {
+    beepr::beep()
+    Sys.sleep(0.1)
+  }
+  Sys.sleep(1)
+}
+
+
+```
+
+
+```{r}
+for (curr_index in 1:num_fold) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  basis_tr <- basis_fun_4[train_index,]
+  basis_te <- basis_fun_4[-train_index,]
+  
+  x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 73, 73, 1))
+  x_te <- array_reshape(basis_te, c(nrow(basis_te), 73, 73, 1))
+  
+  input_shape <- c(73, 73, 1)
+
+
+  model_ck <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
+  #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
+  #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_flatten() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 1, activation = 'linear')
+
+model_ck %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+
+ model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+mod_train_ck <- model_ck %>%
+  fit(x = x_tr, y = train_y, epochs = num_epoch, batch_size = batch_size, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
+  model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
+  mse_vec_ckrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
+  
+} 
+
+# Beep when work finished
+
+beepr::beep(3)
+for (bee2 in 1:5) {
+  for(bee1 in 1:3)
+  {
+    beepr::beep()
+    Sys.sleep(0.1)
+  }
+  Sys.sleep(1)
+}
+
+  
+```
+
+
+
+```{r}
+p_dk <- 
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = dkrig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+
+p_ck <- 
+    ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = ckrig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+
+cowplot::plot_grid(p_obs, p_dk, p_ck, nrow = 1)
+```
+
+
+```{r}
+# Install the googleLanguageR package
+install.packages("googleLanguageR")
+
+# Load the package
+library(googleLanguageR)
+
+# Set up Google credentials
+googleAuthR::gar_auth()
+
+# Set the text you want to convert to speech
+my_text <- "Hello, this is R speaking!"
+
+# Generate speech using the Google Text-to-Speech API
+tts <- googleLanguageR::tts(text = my_text, voice = "en-US-Wavenet-D")
+
+# Save the audio to a file
+writeBin(tts$content, "my_speech.wav")
+
+# Play the audio
+tuneR::play("my_speech.wav")
+
+
+```
+
+
+
+
+
+
+
