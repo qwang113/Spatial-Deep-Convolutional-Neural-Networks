@@ -342,25 +342,25 @@ for (bee2 in 1:5) {
 ```{r}
 p_krig <-
   ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = krig_mean_all)) +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y - krig_mean_all)) +
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude", color = "")
   
 p_dnn <- 
   ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = nn_mean_all)) +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y - nn_mean_all)) +
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
   
 p_dk <- 
   ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = dkrig_mean_all)) +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y - dkrig_mean_all)) +
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
 p_ck <- 
     ggplot() +
-  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = ckrig_mean_all)) +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y - ckrig_mean_all)) +
   scale_fill_viridis_c(name = "") + 
   labs(x = "Longitude",  y = "Latitude")
 
@@ -370,6 +370,13 @@ sqrt(mean((nn_mean_all - sim_y)^2))
 sqrt(mean((dkrig_mean_all - sim_y)^2))
 sqrt(mean((ckrig_mean_all - sim_y)^2))
 cowplot::plot_grid(p_krig, p_dnn, p_dk, p_ck)
+
+
+
+mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig, mse_vec_ckrig))
+pred_dat <- as.data.frame(cbind(krig_mean_all, nn_mean_all,dkrig_mean_all, ckrig_mean_all))
+write.csv(mse_mat, here::here("Qi_simulation/eh_mse_all_10_cv_2d.csv"), row.names = FALSE)
+write.csv(mse_mat, here::here("Qi_simulation/eh_prediction_2d.csv"), row.names = FALSE)
 
 
 ```
