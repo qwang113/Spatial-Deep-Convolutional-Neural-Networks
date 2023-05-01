@@ -71,6 +71,36 @@ mse_vec_nn <- rep(NA, 10)
 mse_vec_dkrig <- rep(NA, 10)
 mse_vec_ckrig <- rep(NA,10)
 
+
+deep_learning <- function(model, x_tr, y_tr, x_te, y_te, epoch_stop)
+{
+  model %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+  
+  model_checkpoint <- callback_model_checkpoint(
+    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+    save_best_only = TRUE,
+    monitor = "val_loss",
+    mode = "min",
+    verbose = 1
+  )
+  history <- model %>%
+    fit(x = x_tr, y = y_tr, epochs = epoch_stop, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, y_te))
+  model %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  return(model)
+}
+
+
+model_dnn <- keras_model_sequential()
+model_dnn %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(sim_coords)), kernel_initializer = 'he_uniform') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 1, activation = 'linear')
+
 for (curr_index in 1:10) {
   train_index <- which(train_all_index != curr_index)
   train_coords <- sim_coords[train_index,]
@@ -87,171 +117,8 @@ for (curr_index in 1:10) {
   # mse_epoch <- rep(NA, 200)
   # epoch_pred <- matrix(NA, nrow = 200, ncol = length(test_y))
   
-  model_dnn <- keras_model_sequential()
-  model_dnn %>% 
-    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dense(units = 100, activation = 'relu') %>%
-    layer_dense(units = 1, activation = 'linear')
+  curr_model <- deep_learning(model_dnn, x_tr, y_tr, x_te, y_te, epoch_stop = 200)
   
-  model_dnn %>% compile(
-    loss = "mse",
-    optimizer = optimizer_adam(),
-    metrics = list("mse")
-  )
-  
-  model_checkpoint <- callback_model_checkpoint(
-    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
-    save_best_only = TRUE,
-    monitor = "val_loss",
-    mode = "min",
-    verbose = 1
-  )
-  dnn_history <- model_dnn %>%
-    fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
-  model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
-  
-  
-  nn_mean_all[-train_index] <- predict(model_dnn, x_te)
-  mse_vec_nn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
-  
+  nn_mean_all[-train_index] <- predict(curr_model, x_te)
+  mse_vec_nn[curr_index] <- evaluate(curr_model, x_te, y_te)[2]
 }
-
-
-
-for (curr_index in 1:10) {
-  train_index <- which(train_all_index != curr_index)
-  train_coords <- sim_coords[train_index,]
-  train_y <- sim_y[train_index]
-  test_coords <- sim_coords[-train_index,]
-  test_y <- sim_y[-train_index]
-  
-  x_tr <- cbind(train_coords, basis_fun_1[train_index,],
-                basis_fun_2[train_index,],basis_fun_3[train_index,])
-  
-  x_te <- cbind(test_coords, basis_fun_1[-train_index,],
-                basis_fun_2[-train_index,],basis_fun_3[-train_index,]) 
-  
-  
-  x_tr <- array_reshape( as.matrix(x_tr), c(length(train_y), ncol(x_tr)))
-  x_te <- array_reshape( as.matrix(x_te), c(length(test_y), ncol(x_tr))) 
-  
-  
-  
-  model_dk <- keras_model_sequential()
-  model_dk %>% 
-    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = 'he_uniform') %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    
-    layer_dense(units = 100, activation = 'relu') %>%
-    
-    layer_dense(units = 1, activation = 'linear')
-  
-  model_dk %>% compile(
-    loss = "mse",
-    optimizer = optimizer_adam(),
-    metrics = list("mse")
-  )
-  model_checkpoint <- callback_model_checkpoint(
-    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
-    save_best_only = TRUE,
-    monitor = "val_loss",
-    mode = "min",
-    verbose = 1
-  )
-  
-  mod_train_dk <- model_dk %>%
-    fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
-  model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
-  
-  dkrig_mean_all[-train_index] <- predict(model_dk, x_te)
-  mse_vec_dkrig[curr_index] <- evaluate(model_dk, x_te, test_y)[2]
-  
-  
-}
-
-
-for (curr_index in 1:10) {
-  train_index <- which(train_all_index != curr_index)
-  train_coords <- sim_coords[train_index,]
-  train_y <- sim_y[train_index]
-  test_coords <- sim_coords[-train_index,]
-  test_y <- sim_y[-train_index]
-  
-  basis_tr <- basis_fun_3[train_index,]
-  basis_te <- basis_fun_3[-train_index,]
-  
-  x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 37, 37, 1))
-  x_te <- array_reshape(basis_te, c(nrow(basis_te), 37, 37, 1))
-  
-  input_shape <- c(37, 37, 1)
-  
-  
-  model_ck <- keras_model_sequential() %>%
-    layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
-    #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
-    #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
-    layer_flatten() %>%
-    layer_dense(units = 100, activation = 'relu') %>% 
-    
-    layer_dense(units = 100, activation = 'relu') %>% 
-    
-    layer_dense(units = 100, activation = 'relu') %>% 
-    
-    layer_dense(units = 100, activation = 'relu') %>% 
-    
-    layer_dense(units = 1, activation = 'linear')
-  
-  
-  model_ck %>% compile(
-    loss = "mse",
-    optimizer = optimizer_adam(),
-    metrics = list("mse")
-  )
-  
-  model_checkpoint <- callback_model_checkpoint(
-    filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
-    save_best_only = TRUE,
-    monitor = "val_loss",
-    mode = "min",
-    verbose = 1
-  )
-  mod_train_ck <- model_ck %>%
-    fit(x = x_tr, y = train_y, epochs = 200, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, test_y))
-  model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
-  ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
-  mse_vec_ckrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
-  
-}  
-
-
-for (curr_index in 1:10) {
-  
-  print(paste("Now doing index ", curr_index))
-  
-  train_index <- which(train_all_index != curr_index)
-  train_coords <- sim_coords[train_index,]
-  train_y <- sim_y[train_index]
-  test_coords <- sim_coords[-train_index,]
-  test_y <- sim_y[-train_index]
-  
-  # Change the population
-  curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
-  
-  curr_beta <- curr_res$beta
-  curr_sig <- curr_res$sigmasq
-  curr_phi <- curr_res$phi
-  curr_nu <- curr_res$kappa
-  
-  cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
-  
-  # Classical Kriging
-  exp_sig_11 <- cov_mat[train_index, train_index]
-  exp_sig_12 <- cov_mat[train_index, -train_index]
-  exp_sig_21 <- t(exp_sig_12)
-  exp_sig_22 <- cov_mat[-train_index, -train_index]
-  krig_mean_all[-train_index] <- curr_beta + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y - curr_beta), ncol = 1 )
-  mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
-                                      krig_mean_all[-train_index])^2)
-}
-
