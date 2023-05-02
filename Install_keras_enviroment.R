@@ -33,3 +33,7 @@ library(keras)
  # >>> import tensorflow as tf
  # >>> tf.test.is_gpu_available()
  
+ 
+ 
+ #update cuda toolkit: conda install cuda -c nvidia
+ 
