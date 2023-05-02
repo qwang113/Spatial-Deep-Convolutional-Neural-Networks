@@ -374,7 +374,7 @@ cowplot::plot_grid(p_krig, p_dnn, p_dk, p_ck)
 
 
 mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig, mse_vec_ckrig))
-pred_dat <- as.data.frame(cbind(krig_mean_all, nn_mean_all,dkrig_mean_all, ckrig_mean_all))
+pred_mat <- as.data.frame(cbind(krig_mean_all, nn_mean_all,dkrig_mean_all, ckrig_mean_all))
 write.csv(mse_mat, here::here("Qi_simulation/eh_mse_all_10_cv_2d.csv"), row.names = FALSE)
 write.csv(pred_mat, here::here("Qi_simulation/eh_prediction_2d.csv"), row.names = FALSE)
 
