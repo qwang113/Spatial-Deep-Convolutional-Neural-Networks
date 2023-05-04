@@ -212,7 +212,6 @@ curr_model <- deep_learning(model_dk, x_tr, train_y, x_te, test_y, epoch_stop = 
   dkrig_mean_all[-train_index] <- predict(curr_model, x_te)
   mse_vec_dkrig[curr_index] <- evaluate(curr_model, x_te, test_y)[2]
   
-
 }
 ```
 
@@ -261,8 +260,6 @@ for (curr_index in 1:10) {
   
   x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 37, 37, 1))
   x_te <- array_reshape(basis_te, c(nrow(basis_te), 37, 37, 1))
-  
-
 
  curr_model <- deep_learning(model_ck, x_tr, train_y, x_te, test_y, epoch_stop = 200)
  ckrig_mean_all[-train_index] <- predict(model_ck, x_te)

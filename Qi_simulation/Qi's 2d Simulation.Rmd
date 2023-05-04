@@ -104,7 +104,7 @@ for (curr_index in 1:num_fold) {
   test_y <- sim_y[-train_index]
 
   # Change the population
-  curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
+  curr_res <- likfit(coords = train_coords, data = train_y, ini.cov.pars = c( 100,100), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
 
   curr_beta <- curr_res$beta
   curr_sig <- curr_res$sigmasq
@@ -441,6 +441,8 @@ diff_ck <-
 
 cowplot::plot_grid(p_krig, p_dnn, p_dk, p_ck)
 cowplot::plot_grid(diff_krig, diff_dnn, diff_dk, diff_ck)
+
+# facet_wrap
 ```
 
 ```{r}

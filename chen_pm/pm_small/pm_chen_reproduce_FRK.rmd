@@ -56,54 +56,54 @@ coordinates(pm_cov) <- ~ long + lat
 
 ```{r}
 
-us_map <- map_data("state", region=c("alabama", "arizona", "arkansas", "california", "colorado", "connecticut",
-                                     "delaware", "florida", "georgia", "idaho", "illinois", "indiana",
-                                     "iowa", "kansas", "kentucky", "louisiana", "maine", "maryland",
-                                     "massachusetts", "michigan", "minnesota", "mississippi", "missouri",
-                                     "montana", "nebraska", "nevada", "new hampshire", "new jersey",
-                                     "new mexico", "new york", "north carolina", "north dakota", "ohio",
-                                     "oklahoma", "oregon", "pennsylvania", "rhode island", "south carolina",
-                                     "south dakota", "tennessee", "texas", "utah", "vermont", "virginia",
-                                     "washington", "west virginia", "wisconsin", "wyoming"))
-
-states = c("Alabama", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
-           "Delaware", "Florida", "Georgia", "Idaho", "Illinois", "Indiana",
-           "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
-           "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",
-           "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey",
-           "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
-           "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
-           "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
-            "West Virginia", "Wisconsin", "Wyoming", "Washington")
-
+# us_map <- map_data("state", region=c("alabama", "arizona", "arkansas", "california", "colorado", "connecticut",
+#                                      "delaware", "florida", "georgia", "idaho", "illinois", "indiana",
+#                                      "iowa", "kansas", "kentucky", "louisiana", "maine", "maryland",
+#                                      "massachusetts", "michigan", "minnesota", "mississippi", "missouri",
+#                                      "montana", "nebraska", "nevada", "new hampshire", "new jersey",
+#                                      "new mexico", "new york", "north carolina", "north dakota", "ohio",
+#                                      "oklahoma", "oregon", "pennsylvania", "rhode island", "south carolina",
+#                                      "south dakota", "tennessee", "texas", "utah", "vermont", "virginia",
+#                                      "washington", "west virginia", "wisconsin", "wyoming"))
 # 
-coords <- cbind(long, lat)
-x.res <- 500
-y.res <- 500
-surf <- mba.surf(cbind(coords, pm), no.X = x.res, no.Y = y.res, h = 5, m = 2, extend = TRUE)$xyz.est
-
-all_inside <- NULL
-exp_grid <- expand.grid(surf$x, surf$y)
-for (i in 1:length(states)) {
-  tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),as.matrix(exp_grid))
-  all_inside <- unique(c(all_inside, tem))
-
-}
-obs_pm <- surf$z[all_inside]
-obs_long <-  as.matrix(exp_grid)[all_inside,1]
-obs_lat <-  as.matrix(exp_grid)[all_inside,2]
-p1 <-
-ggplot() +
-  geom_contour_filled(aes(x = obs_long, y = obs_lat, z = obs_pm))+
-   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red")
-p2 <-
-ggplot() +
-  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
-  geom_point(aes(x = long, y = lat, color = pm)) +
-  scale_color_viridis_c()
-
-p1
-p2
+# states = c("Alabama", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+#            "Delaware", "Florida", "Georgia", "Idaho", "Illinois", "Indiana",
+#            "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
+#            "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",
+#            "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey",
+#            "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+#            "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
+#            "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
+#             "West Virginia", "Wisconsin", "Wyoming", "Washington")
+# 
+# # 
+# coords <- cbind(long, lat)
+# x.res <- 500
+# y.res <- 500
+# surf <- mba.surf(cbind(coords, pm), no.X = x.res, no.Y = y.res, h = 5, m = 2, extend = TRUE)$xyz.est
+# 
+# all_inside <- NULL
+# exp_grid <- expand.grid(surf$x, surf$y)
+# for (i in 1:length(states)) {
+#   tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),as.matrix(exp_grid))
+#   all_inside <- unique(c(all_inside, tem))
+# 
+# }
+# obs_pm <- surf$z[all_inside]
+# obs_long <-  as.matrix(exp_grid)[all_inside,1]
+# obs_lat <-  as.matrix(exp_grid)[all_inside,2]
+# p1 <-
+# ggplot() +
+#   geom_contour_filled(aes(x = obs_long, y = obs_lat, z = obs_pm))+
+#    geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red")
+# p2 <-
+# ggplot() +
+#   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
+#   geom_point(aes(x = long, y = lat, color = pm)) +
+#   scale_color_viridis_c()
+# 
+# p1
+# p2
 
 ```
 # Basis Function Generation
@@ -140,14 +140,27 @@ for (i in 1:length(gridbasis3@fn)) {
 
 ```{r}
 set.seed(0)
-train_index <- sample(1:nrow(pm_cov), 400, replace = FALSE)
+train_index_all <- sample(1:10, length(pm), replace = T)
+loss_dnn <- rep(NA, 10)
+loss_dk <- rep(NA, 10)
+loss_ck <- rep(NA, 10)
+loss_nngp <- rep(NA, 10)
+
+pred_dnn <- rep(NA, length(pm))
+pred_dk <- rep(NA, length(pm))
+pred_ck <- rep(NA, length(pm))
+pred_nngp <- rep(NA, length(pm))
 ```
 
 
 ```{r}
+pm_cov <- cbind(pm_avg, cov_dat[pm_avg[,1],])[,-c(1,3)]
 
-x_tr <- as.matrix(cbind(long[train_index], lat[train_index]))
-x_te <- as.matrix(cbind(long[-train_index], lat[-train_index]))
+for (curr_index in 1:10) {
+  train_index <- which(train_index_all != curr_index)
+  
+x_tr <- as.matrix(scale(pm_cov[train_index,-1]))
+x_te <- as.matrix(scale(pm_cov[-train_index,-1]))
 
 pm_tr <- pm[train_index]
 pm_te <- pm[-train_index]
@@ -156,10 +169,16 @@ pm_te <- pm[-train_index]
 model_dnn <- keras_model_sequential() 
 
 model_dnn %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = "he_uniform") %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
   layer_dense(units = 1, activation = 'linear')
 
 # Compile the model
@@ -184,14 +203,21 @@ mod_train_dnn <- model_dnn %>%
 
 model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
-loss_dnn <- evaluate(model_dnn, x_te, pm_te)[2]
+loss_dnn[curr_index] <- evaluate(model_dnn, x_te, pm_te)[2]
+pred_dnn[-train_index] <- predict(model_dnn, x_te)
+
+}
+
 
 ```
 
 ## Deep Kriging Model
 
 ```{r}
-# basis_tr <- basis_arr[train_index,,]
+
+
+for (curr_index in 1:10) {
+  # basis_tr <- basis_arr[train_index,,]
 # basis_te <- basis_arr[-train_index,,]
 # 
 cov_tr <- as.matrix(cbind(long[train_index], lat[train_index], cov_all[train_index,]))
@@ -201,8 +227,10 @@ cov_te <- as.matrix(cbind(long[-train_index], lat[-train_index], cov_all[-train_
 # x_te <- array_reshape(basis_te, c(nrow(basis_te),  shape_row*shape_col))  # Same as prervious step
 basis_tr  <- basis_3[train_index,]
 basis_te  <- basis_3[-train_index,]
-x_tr <- as.matrix(cbind(cov_tr, basis_tr))
-x_te <- as.matrix(cbind(cov_te, basis_te))
+x_tr <- scale(as.matrix(cbind(cov_tr, basis_tr)))
+x_te <- scale(as.matrix(cbind(cov_te, basis_te)))
+
+
 
 pm_tr <- pm[train_index]
 pm_te <- pm[-train_index]
@@ -211,10 +239,15 @@ pm_te <- pm[-train_index]
 model_dk <- keras_model_sequential() 
 
 model_dk %>% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(x_tr))) %>% 
-  layer_dropout(rate = 0.4) %>% 
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = "he_uniform") %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_batch_normalization()%>%
   layer_dense(units = 1, activation = 'linear')
 
 # Compile the model
@@ -242,7 +275,10 @@ mod_train_dk <- model_dk %>%
 
 model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
-loss_dk <- evaluate(model_dk, x_te, pm_te)[2]
+loss_dk[curr_index] <- evaluate(model_dk, x_te, pm_te)[2]
+pred_dk[-train_index] <- predict(model_dk, x_te)
+}
+
 
 ```
 ## Convolutional Kriging Model
