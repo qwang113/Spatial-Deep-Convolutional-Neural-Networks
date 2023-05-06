@@ -1,17 +1,17 @@
-# rm(list = ls())
-# library(FRK)
-# library(spNNGP)
-# library(ggplot2)
-# library(maps)
-# library(MBA)
-# library(fields)
-# library(sp)
-# library(ncdf4)
-# library(reticulate)
-# library(geoR)
-# use_condaenv("tf_gpu")
-# library(tensorflow)
-# library(keras)
+rm(list = ls())
+library(FRK)
+library(spNNGP)
+library(ggplot2)
+library(maps)
+library(MBA)
+library(fields)
+library(sp)
+library(ncdf4)
+library(reticulate)
+library(geoR)
+use_condaenv("tf_gpu")
+library(tensorflow)
+library(keras)
 loss_dk <- as.matrix(read.csv(here::here("chen_pm/pm_small/loss_Nychka.csv"))[,3])
 tot_idx <- 10
 pm_dat <- read.csv(here::here("pm25_0605.csv"), header = T)
@@ -133,8 +133,10 @@ for (i in 1:length(pm)) {
   basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4, byrow = TRUE)
 }
 
+# -------------------------------------------Train Model
+
 for (curr_index in 1:tot_idx) {
-  
+  drop = 0
   train_index <- which(train_index_all != curr_index)
   
   basis_tr_1 <- array_reshape(basis_arr_1[train_index,,], c(length(train_index), shape_row_1, shape_col_1, 1))
@@ -150,7 +152,7 @@ for (curr_index in 1:tot_idx) {
   cov_tr <- scaled_cov[train_index,]
   cov_te <- scaled_cov[-train_index,]
   
-  drop = 0.5
+
   # We need three convolutional input model and adding covariates.
   input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
   input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
@@ -160,26 +162,34 @@ for (curr_index in 1:tot_idx) {
   
   
   resolution_1_conv <- input_basis_1 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
-    layer_dropout(drop) %>%
+    layer_conv_2d(filters = 100, kernel_size = c(2,2), 
+                  activation = 'relu', kernel_initializer = 'he_uniform') %>%
+    #layer_batch_normalization() %>%
+    # layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(2,2)) %>%
     layer_flatten()
   
   resolution_2_conv <- input_basis_2 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
-    layer_dropout(drop) %>%
+    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu', kernel_initializer = 'he_uniform') %>%
+
+    #layer_batch_normalization() %>%
+    # layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(2,2)) %>%
     layer_flatten()
   
   resolution_3_conv <- input_basis_3 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
-    layer_dropout(drop) %>%
+    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu', kernel_initializer = 'he_uniform') %>%
+
+    #layer_batch_normalization() %>%
+    # layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(3,3)) %>%
     layer_flatten() 
   
   resolution_4_conv <- input_basis_4 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
-    layer_dropout(drop) %>%
+    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu', kernel_initializer = 'he_uniform') %>%
+
+    #layer_batch_normalization() %>%
+    # layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(4,4)) %>%
     layer_flatten() 
   
@@ -191,8 +201,8 @@ for (curr_index in 1:tot_idx) {
   
   
   output_layer <- all_model %>%
-    layer_dense(units = 100, activation = 'relu') %>%
-    layer_dense(units = 100, activation = 'relu') %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dense(units = 100, activation = 'relu') %>% 
     layer_dense(units = 1, activation = 'linear')
   
   model_ck <- keras_model(inputs = list(input_basis_1, input_basis_2, input_basis_3,input_basis_4, input_cov), outputs = output_layer)
@@ -214,8 +224,8 @@ for (curr_index in 1:tot_idx) {
   mod_train_ck <- model_ck %>% fit(
     x = list(basis_tr_1, basis_tr_2, basis_tr_3,basis_tr_4, cov_tr),
     y = pm[train_index],
-    epochs=20,
-    batch_size=16,
+    epochs=200,
+    batch_size=32,
     validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te), pm[-train_index]),
     callbacks = model_checkpoint
   )

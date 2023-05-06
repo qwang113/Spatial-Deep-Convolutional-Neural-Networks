@@ -284,9 +284,9 @@ model_dk %>%
   layer_dense(units = 100, activation = 'relu', input_shape = c( ncol(as.matrix(cbind(scaled_cov[train_index,], basis_fun_1[train_index,], basis_fun_2[train_index,]
                     , basis_fun_3[train_index,], basis_fun_4[train_index,]))) - length(num_0) ), kernel_initializer = "he_uniform") %>% 
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dropout(drop) %>%
+  #layer_dropout(drop) %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dropout(drop) %>%
+  #layer_dropout(drop) %>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_dense(units = 1, activation = 'linear')
 
@@ -327,8 +327,6 @@ basis_arr_1 <- array(NA, dim = c(length(pm), shape_row_1, shape_col_1))
 for (i in 1:length(pm)) {
   basis_arr_1[i,,] <- matrix(basis_fun_1[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = TRUE)
 }
-
-
 
 
 # Second resolution
@@ -407,11 +405,7 @@ all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolu
 
 output_layer <- all_model %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dropout(drop) %>%
-  layer_dense(units = 100, activation = 'relu') %>%  
-  layer_dropout(drop) %>%
-  layer_batch_normalization()%>%
-  layer_dense(units = 100, activation = 'relu') %>%
+
   layer_dense(units = 1, activation = 'linear')
 
 model_ck <- keras_model(inputs = list(input_basis_1, input_basis_2, input_basis_3,input_basis_4, input_cov), outputs = output_layer)
