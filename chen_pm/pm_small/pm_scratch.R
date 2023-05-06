@@ -1,19 +1,19 @@
-rm(list = ls())
-library(FRK)
-library(spNNGP)
-library(ggplot2)
-library(maps)
-library(MBA)
-library(fields)
-library(sp)
-library(ncdf4)
-library(reticulate)
-library(geoR)
-use_condaenv("tf_gpu")
-library(tensorflow)
-library(keras)
-
-
+# rm(list = ls())
+# library(FRK)
+# library(spNNGP)
+# library(ggplot2)
+# library(maps)
+# library(MBA)
+# library(fields)
+# library(sp)
+# library(ncdf4)
+# library(reticulate)
+# library(geoR)
+# use_condaenv("tf_gpu")
+# library(tensorflow)
+# library(keras)
+loss_dk <- as.matrix(read.csv(here::here("chen_pm/pm_small/loss_Nychka.csv"))[,3])
+tot_idx <- 10
 pm_dat <- read.csv(here::here("pm25_0605.csv"), header = T)
 cov_dat <- read.csv(here::here("covariate0605.csv"), header = T)
 
@@ -42,10 +42,10 @@ min_max_scale <- function(x)
 {
   low <- range(x)[1]
   high <- range(x)[2]
-  
+
   out <- (x - low)/(high - low)
   return(out)
-  
+
 }
 
 scaled_cov <- apply(cov_all, 2, min_max_scale)
@@ -55,18 +55,18 @@ scaled_coords <- cbind(scaled_long, scaled_lat)
 
 
 nychka_fun <- function(spdist, theta){
-  
+
   d <- spdist/theta
-  
+
   out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
-  
+
   out[which(d > 1)] <- 0
   non_0 <- which(d<=1)
   out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
   return(out)
 }
 
-basis_1 <- expand.grid(seq(from = 0, to = 1, length.out = 10),seq(from = 0, to = 1, length.out = 10))  
+basis_1 <- expand.grid(seq(from = 0, to = 1, length.out = 10),seq(from = 0, to = 1, length.out = 10))
 basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
 basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
 basis_4 <- expand.grid(seq(from = 0, to = 1, length.out = 73),seq(from = 0, to = 1, length.out = 73))
@@ -89,7 +89,7 @@ basis_fun_4 <- nychka_fun(basis_dist_4, theta = theta_4)
 
 
 set.seed(0)
-train_index_all <- sample(1:10, length(pm), replace = T)
+train_index_all <- sample(1:tot_idx, length(pm), replace = T)
 loss_dnn <- rep(NA, 10)
 loss_dk <- rep(NA, 10)
 loss_ck <- rep(NA, 10)
@@ -133,7 +133,7 @@ for (i in 1:length(pm)) {
   basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4, byrow = TRUE)
 }
 
-for (curr_index in 1:10) {
+for (curr_index in 1:tot_idx) {
   
   train_index <- which(train_index_all != curr_index)
   
@@ -150,7 +150,7 @@ for (curr_index in 1:10) {
   cov_tr <- scaled_cov[train_index,]
   cov_te <- scaled_cov[-train_index,]
   
-  drop = 0.1
+  drop = 0.5
   # We need three convolutional input model and adding covariates.
   input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
   input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
@@ -160,35 +160,38 @@ for (curr_index in 1:10) {
   
   
   resolution_1_conv <- input_basis_1 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
-    
+    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
+    layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(2,2)) %>%
     layer_flatten()
   
   resolution_2_conv <- input_basis_2 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
+    layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(2,2)) %>%
     layer_flatten()
   
   resolution_3_conv <- input_basis_3 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
+    layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(3,3)) %>%
     layer_flatten() 
   
   resolution_4_conv <- input_basis_4 %>%
-    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu') %>%
+    layer_dropout(drop) %>%
     # layer_max_pooling_2d(pool_size = c(4,4)) %>%
     layer_flatten() 
   
   cov_model <- input_cov 
+  
   
   all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, resolution_4_conv, cov_model))
   # all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, cov_model))
   
   
   output_layer <- all_model %>%
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dense(units = 100, activation = 'relu') %>%  
+    layer_dense(units = 100, activation = 'relu') %>%
     layer_dense(units = 100, activation = 'relu') %>%
     layer_dense(units = 1, activation = 'linear')
   
@@ -211,7 +214,7 @@ for (curr_index in 1:10) {
   mod_train_ck <- model_ck %>% fit(
     x = list(basis_tr_1, basis_tr_2, basis_tr_3,basis_tr_4, cov_tr),
     y = pm[train_index],
-    epochs=1000,
+    epochs=20,
     batch_size=16,
     validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te), pm[-train_index]),
     callbacks = model_checkpoint
@@ -223,3 +226,5 @@ for (curr_index in 1:10) {
   pred_ck[-train_index] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te))
   
 }
+
+beepr::beep(1)
