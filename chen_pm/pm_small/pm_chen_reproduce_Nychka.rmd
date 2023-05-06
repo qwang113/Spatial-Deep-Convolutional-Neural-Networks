@@ -212,10 +212,10 @@ model_dnn <- keras_model_sequential()
 
 model_dnn %>% 
   layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(scaled_cov)), kernel_initializer = "he_uniform") %>% 
-  layer_dropout(rate = 0.5) %>% 
+  layer_dropout(rate = 0.3) %>% 
   layer_batch_normalization()%>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.5) %>%
+  layer_dropout(rate = 0.3) %>%
   layer_dense(units = 100, activation = 'relu') %>%
   layer_batch_normalization()%>%
   layer_dense(units = 1, activation = 'linear')
@@ -328,31 +328,28 @@ for (i in 1:length(pm)) {
   basis_arr_1[i,,] <- matrix(basis_fun_1[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = TRUE)
 }
 
-test_idx <- 1
-ggplot() +
-  geom_raster(aes(x = basis_1[,1], y = basis_1[,2], fill = as.vector(basis_arr_1[test_idx,,]))) +
-  geom_point(aes(x = scaled_long[test_idx], y = scaled_lat[test_idx]))
+
 
 
 # Second resolution
 shape_col_2 <- shape_row_2 <- 19
 basis_arr_2 <- array(NA, dim = c(length(pm), shape_row_2, shape_col_2))
 for (i in 1:length(pm)) {
-  basis_arr_2[i,,] <- matrix(basis_fun_2[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+  basis_arr_2[i,,] <- matrix(basis_fun_2[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = TRUE)
 }
 
 # Third resolution
 shape_col_3 <- shape_row_3 <- 37
 basis_arr_3 <- array(NA, dim = c(length(pm), shape_row_3, shape_col_3))
 for (i in 1:length(pm)) {
-  basis_arr_3[i,,] <- matrix(basis_fun_3[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+  basis_arr_3[i,,] <- matrix(basis_fun_3[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = TRUE)
 }
 
 # Fourth resolution
 shape_col_4 <- shape_row_4 <- 73
 basis_arr_4 <- array(NA, dim = c(length(pm), shape_row_4, shape_col_4))
 for (i in 1:length(pm)) {
-  basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4, byrow = T)
+  basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4, byrow = TRUE)
 }
 
 for (curr_index in 1:10) {
@@ -372,7 +369,7 @@ basis_te_4 <- array_reshape(basis_arr_4[-train_index,,], c(length(pm) - length(t
 cov_tr <- scaled_cov[train_index,]
 cov_te <- scaled_cov[-train_index,]
 
-drop = 0.3
+drop = 0.1
 # We need three convolutional input model and adding covariates.
 input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
 input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
@@ -404,14 +401,16 @@ resolution_1_conv <- input_basis_1 %>%
   
   cov_model <- input_cov 
 
-
 all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, resolution_4_conv, cov_model))
 # all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, cov_model))
 
 
 output_layer <- all_model %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>%  
+  layer_dropout(drop) %>%
+  layer_batch_normalization()%>%
   layer_dense(units = 100, activation = 'relu') %>%
   layer_dense(units = 1, activation = 'linear')
 
@@ -434,8 +433,8 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3,basis_tr_4, cov_tr),
   y = pm[train_index],
-  epochs=200,
-  batch_size=32,
+  epochs=1000,
+  batch_size=16,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te), pm[-train_index]),
   callbacks = model_checkpoint
 )
@@ -449,7 +448,7 @@ model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h
 ```
 
 
-## Krigin g Model
+## Kriging Model
 
 
 ```{r}
