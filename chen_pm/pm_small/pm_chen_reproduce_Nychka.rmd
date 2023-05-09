@@ -21,11 +21,6 @@ library(geoR)
 use_condaenv("tf_gpu")
 library(tensorflow)
 library(keras)
-```
-
-# Read the data and visualization
-
-```{r}
 pm_dat <- read.csv(here::here("pm25_0605.csv"), header = T)
 cov_dat <- read.csv(here::here("covariate0605.csv"), header = T)
 
@@ -64,9 +59,7 @@ scaled_cov <- apply(cov_all, 2, min_max_scale)
 scaled_long <- scaled_cov[,1]
 scaled_lat <- scaled_cov[,2]
 scaled_coords <- cbind(scaled_long, scaled_lat)
-```
 
-```{r}
 
 # us_map <- map_data("state", region=c("alabama", "arizona", "arkansas", "california", "colorado", "connecticut",
 #                                      "delaware", "florida", "georgia", "idaho", "illinois", "indiana",
@@ -117,10 +110,7 @@ scaled_coords <- cbind(scaled_long, scaled_lat)
 # p1
 # p2
 
-```
-# Basis Function Generation
 
-```{r}
 nychka_fun <- function(spdist, theta){
   
   d <- spdist/theta
@@ -175,10 +165,6 @@ nychka_fun <- function(spdist, theta){
 #   return(model)
 #   }
   
-```
-
-
-```{r}
 set.seed(0)
 train_index_all <- sample(1:10, length(pm), replace = T)
 loss_dnn <- rep(NA, 10)
@@ -194,9 +180,6 @@ pred_krig <- rep(NA, length(pm))
 
 
 ## DNN Model
-
-
-
 
 ```{r}
 for (curr_index in 1:10) {
@@ -323,33 +306,39 @@ pred_dk[-train_index] <- predict(model_dk, x_te)
 #rearrange_basis_order_1 <- order( basis_1[,1], basis_1[,2] )
 shape_col_1 <- shape_row_1 <- 10
 basis_arr_1 <- array(NA, dim = c(length(pm), shape_row_1, shape_col_1))
-
 for (i in 1:length(pm)) {
-  basis_arr_1[i,,] <- matrix(basis_fun_1[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = TRUE)
+  basis_arr_1[i,,] <- matrix(basis_fun_1[i,], nrow = shape_row_1, ncol = shape_col_1)
 }
 
+test_idx <- 1
+ggplot() +
+geom_raster(aes(x = basis_1[,1], y = basis_1[,2], fill = as.vector(basis_arr_1[test_idx, , ]))) +
+  geom_point(aes(x = scaled_coords[test_idx,1], y = scaled_coords[test_idx,2]))
 
 # Second resolution
 shape_col_2 <- shape_row_2 <- 19
 basis_arr_2 <- array(NA, dim = c(length(pm), shape_row_2, shape_col_2))
 for (i in 1:length(pm)) {
-  basis_arr_2[i,,] <- matrix(basis_fun_2[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = TRUE)
+  basis_arr_2[i,,] <- matrix(basis_fun_2[i,], nrow = shape_row_2, ncol = shape_col_2)
 }
 
 # Third resolution
 shape_col_3 <- shape_row_3 <- 37
 basis_arr_3 <- array(NA, dim = c(length(pm), shape_row_3, shape_col_3))
 for (i in 1:length(pm)) {
-  basis_arr_3[i,,] <- matrix(basis_fun_3[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = TRUE)
+  basis_arr_3[i,,] <- matrix(basis_fun_3[i,], nrow = shape_row_3, ncol = shape_col_3)
 }
 
 # Fourth resolution
 shape_col_4 <- shape_row_4 <- 73
 basis_arr_4 <- array(NA, dim = c(length(pm), shape_row_4, shape_col_4))
 for (i in 1:length(pm)) {
-  basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4, byrow = TRUE)
+  basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4)
 }
+```
 
+
+```{r}
 for (curr_index in 1:10) {
 
 train_index <- which(train_index_all != curr_index)
@@ -405,14 +394,15 @@ all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolu
 
 output_layer <- all_model %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-
+layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
   layer_dense(units = 1, activation = 'linear')
 
 model_ck <- keras_model(inputs = list(input_basis_1, input_basis_2, input_basis_3,input_basis_4, input_cov), outputs = output_layer)
 
 model_ck <- 
 model_ck %>% compile(
-  optimizer = optimizer_adam(),
+  optimizer = optimizer_adam(learning_rate = 0.01),
   loss = 'mse',
   metrics = c('mse')
 )
