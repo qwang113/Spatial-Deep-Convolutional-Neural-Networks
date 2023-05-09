@@ -142,6 +142,62 @@ for (i in 1:length(gridbasis3@fn)) {
 }
 
 
+# Redefine three layers of basis images
+basis_use_1_2d <- basis_1
+basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
+basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
+
+# First resolution
+shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
+shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
+basis_arr_1 <- array(NA, dim = c(nrow(pm_cov), shape_row_1, shape_col_1))
+for (i in 1:nrow(pm_cov)) {
+  basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
+
+# Second resolution
+shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
+shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
+basis_arr_2 <- array(NA, dim = c(nrow(pm_cov), shape_row_2, shape_col_2))
+for (i in 1:nrow(pm_cov)) {
+  basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
+
+# Third resolution
+shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
+shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
+basis_arr_3 <- array(NA, dim = c(nrow(pm_cov), shape_row_3, shape_col_3))
+
+for (i in 1:nrow(pm_cov)) {
+  basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
+
+
+
+
+
+  test_idx <- 1
+  
+  
+# Convert matrix to dataframe
+library(reshape2)
+df <- melt(basis_arr_2[test_idx,,])
+colnames(df) <- c("x", "y", "z")
+
+# Create heatmap using ggplot2
+library(ggplot2)
+
+ggplot(df, aes(x = x, y = y, fill = z)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  xlab("X") +
+  ylab("Y") +
+  labs(fill = "Z")
+
+
+  ggplot() +
+    geom_contour_filled(aes(x = seq(from = 0, to = 1, length.out = 3), y = seq(from = 0, to = 1, length.out = 3), fill = as.vector(basis_arr_1[test_idx, , ]))) +
+    geom_point(aes(x = scaled_coords[test_idx,1], y = scaled_coords[test_idx,2]))
 
 
 # DNN Model
@@ -290,37 +346,7 @@ pred_dk[-train_index] <- predict(model_dk, x_te)
 ## Convolutional Kriging Model
 
 
-```{r}
-# Redefine three layers of basis images
-basis_use_1_2d <- basis_1
-basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
-basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 
-# First resolution
-shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
-shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
-basis_arr_1 <- array(NA, dim = c(nrow(pm_cov), shape_row_1, shape_col_1))
-for (i in 1:nrow(pm_cov)) {
-  basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
-}
-
-# Second resolution
-shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
-shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
-basis_arr_2 <- array(NA, dim = c(nrow(pm_cov), shape_row_2, shape_col_2))
-for (i in 1:nrow(pm_cov)) {
-  basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
-}
-
-# Third resolution
-shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
-shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
-basis_arr_3 <- array(NA, dim = c(nrow(pm_cov), shape_row_3, shape_col_3))
-
-for (i in 1:nrow(pm_cov)) {
-  basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
-}
-```
 
 
 ```{r}

@@ -67,7 +67,7 @@ curr_index <- 1
   basis_te_4 <- array_reshape(basis_arr_4[-train_index,,], c(length(pm) - length(train_index), shape_row_4, shape_col_4, 1))
   
   model_ck  <- keras_model_sequential() %>%
-    layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu', input_shape = c(shape_row_4, shape_col_4, 1)) %>%
+    layer_conv_2d(filters = 100, kernel_size = c(3,3), activation = 'relu', input_shape = c(shape_row_4, shape_col_4, 1)) %>%
     layer_flatten() %>%
     layer_dense(units = 100, activation = 'relu') %>% 
     layer_dense(units = 100, activation = 'relu') %>% 
@@ -94,7 +94,7 @@ curr_index <- 1
     x = basis_tr_4,
     y = pm[train_index],
     epochs=1000,
-    batch_size=16,
+    batch_size=32,
     validation_data=list(basis_te_4, pm[-train_index]),
     callbacks = model_checkpoint
   )
@@ -107,6 +107,10 @@ curr_index <- 1
   
   
   
+  test_idx <- 1
+  ggplot() +
+    geom_raster(aes(x = basis_4[,1], y = basis_4[,2], fill = as.vector(basis_arr_4[test_idx, , ]))) +
+    geom_point(aes(x = scaled_coords[test_idx,1], y = scaled_coords[test_idx,2]))
   
   
   
