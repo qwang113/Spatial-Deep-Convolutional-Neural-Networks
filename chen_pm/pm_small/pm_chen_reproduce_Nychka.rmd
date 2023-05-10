@@ -480,4 +480,13 @@ write.csv(as.data.frame(loss_all),here::here("chen_pm/pm_small/loss_Nychka.csv")
 ```
 
 
+```{r}
+loss_all <- read.csv(here::here("chen_pm/pm_small/loss_Nychka.csv"))
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
+   coord_flip()
+```
+
+
+
 
