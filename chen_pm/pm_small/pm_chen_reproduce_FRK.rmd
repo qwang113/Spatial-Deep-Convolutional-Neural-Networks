@@ -49,7 +49,7 @@ cov_idx <- apply(obs_grid_dist, 1, which.min)
 pm_idxed <- cbind(pm_dat, cov_idx)
 pm_avg <- aggregate(PM25 ~ cov_idx, data = pm_dat, FUN = mean)
 
-pm_cov <- cbind(pm_avg, apply(cov_dat[pm_avg[,1],], 2, min_max_scale))[,-c(1,3)]
+pm_cov <- cbind(pm_avg, cov_dat[pm_avg[,1],])[,-c(1,3)]
 
 
 
@@ -343,12 +343,9 @@ pred_dk[-train_index] <- predict(model_dk, x_te)
 ## Convolutional Kriging Model
 
 
-
-
-
 ```{r}
 for (curr_index in 1:10) {
-
+train_index <- which(train_index_all != curr_index)
 
 basis_tr_1 <- array_reshape(basis_arr_1[train_index,,], c(length(train_index), shape_row_1, shape_col_1, 1))
 basis_tr_2 <- array_reshape(basis_arr_2[train_index,,], c(length(train_index), shape_row_2, shape_col_2, 1))
@@ -441,10 +438,10 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = pm[train_index],
-  epochs=100,
+  epochs=500,
   batch_size=16,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), pm[-train_index]),
-  callbacks = model_checkpoint
+  callbacks = model_checkpoint, shuffle = TRUE
 )
 
 model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
@@ -495,7 +492,10 @@ ggplot() +
    coord_flip()
 write.csv(as.data.frame(loss_all),here::here("chen_pm/pm_small/loss_frk_dck.csv"),row.names = FALSE)
 
-
+loss_all <- read.csv(here::here("chen_pm/pm_small/loss_frk_dck.csv"))
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
+   coord_flip()
 ```
 
 
