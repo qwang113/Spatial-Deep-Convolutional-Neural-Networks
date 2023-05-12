@@ -113,12 +113,12 @@ train_index_all <- sample(1:num_fold, length(y), replace = T)
 loss_dnn <- rep(NA, num_fold)
 loss_dk <- rep(NA, num_fold)
 loss_ck <- rep(NA, num_fold)
-loss_nngp <- rep(NA, num_fold)
+loss_inla <- rep(NA, num_fold)
 
-pred_dnn <- rep(NA, length(y))
-pred_dk <- rep(NA, length(y))
-pred_ck <- rep(NA, length(y))
-pred_nngp <- rep(NA, length(y))
+# pred_dnn <- rep(NA, length(y))
+# pred_dk <- rep(NA, length(y))
+# pred_ck <- rep(NA, length(y))
+# pred_inla <- rep(NA, length(y))
 ```
 
 #DNN
@@ -168,13 +168,13 @@ model_dnn %>% compile(
   
   
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 512, 
+  fit(x = x_tr, y = y_tr, epochs = 500, batch_size = 512, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
 model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
 loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
-pred_dnn[-train_index] <- predict(model_dnn, x_te)
+# pred_dnn[-train_index] <- predict(model_dnn, x_te)
 
 }
 
@@ -235,14 +235,14 @@ model_dk %>% compile(
   
   
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 512, 
+  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 512, 
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
 model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
 loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
-pred_dk[-train_index] <- predict(model_dk, x_te)
+# pred_dk[-train_index] <- predict(model_dk, x_te)
 }
 ```
 ```{r}
@@ -444,8 +444,8 @@ p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                  verbose = FALSE) 
 index.pred<-inla.stack.index(stk.full, "pred")$data
-p.res.pred$summary.linear.predictor[index.pred,"mean"]
-pred_mse <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - soc_te)^2)
+
+loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 
 }
 
@@ -453,11 +453,18 @@ pred_mse <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - soc_t
 
 ```{r}
 
-loss_all <- as.data.frame(cbind(loss_nngp, loss_dnn, loss_dk, loss_ck))
+loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 ggplot() +
   geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
 write.csv(as.data.frame(loss_all),here::here("other_dataset/mra_reproduce/loss_mra.csv"),row.names = FALSE)
+loss_all <- read.csv(here::here("other_dataset/mra_reproduce/loss_mra.csv"))
+loss_inla_ck <- loss_all[,c(1,4)]
+
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
+   coord_flip()
+
 
 ```
 
