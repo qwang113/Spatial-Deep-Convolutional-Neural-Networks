@@ -1,1 +1,5 @@
 https://www.soilgrids.org/
+
+
+long: -124 to -66
+lat : 24 to 50
