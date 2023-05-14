@@ -3,3 +3,6 @@ https://www.soilgrids.org/
 
 long: -124 to -66
 lat : 24 to 50
+
+access to soil data set:
+https://git.wur.nl/isric/soilgrids/soilgrids.notebooks/-/blob/master/markdown/wcs_from_R.md
