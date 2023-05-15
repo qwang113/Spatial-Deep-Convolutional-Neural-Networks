@@ -1,0 +1,498 @@
+---
+title: "Chicago Crime Application"
+author: "Qi Wang"
+date: "2023-05-11"
+output: pdf_document
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+library(FRK)
+library(spNNGP)
+library(ggplot2)
+library(maps)
+library(MBA)
+library(fields)
+library(sp)
+library(ncdf4)
+library(reticulate)
+use_condaenv("tf_gpu")
+library(tensorflow)
+library(keras)
+
+chicago_crime <- read.csv("C:/Users/10616/Downloads/chicago_crime.csv")
+resolution <- 0.001
+create_grid <- function(x)
+{
+  result <- ifelse((x %% resolution) > resolution/2, ceiling(x / resolution) * resolution, floor(x / resolution) * resolution)
+  return(result)
+}
+# crime_loc <- cbind(round(na.omit(cbind(chicago_crime$Longitude, chicago_crime$Latitude)), 2),1)
+crime_loc <- matrix(sapply(na.omit(cbind(chicago_crime$Longitude, chicago_crime$Latitude)),create_grid ), ncol= 2)
+
+crime_temp <-  cbind(crime_loc, 1)
+
+crime_dat <- aggregate(crime_temp[,3], by = list(crime_temp[,1], crime_temp[,2]), FUN = sum)
+
+crime_dat <- crime_dat[which(crime_dat[,1] >= -91),]
+
+ggplot() +
+  geom_point(aes(x = crime_dat[,1], y = crime_dat[,2], color = crime_dat[,3]), size = 0.5) +
+  scale_color_viridis_c()
+
+
+
+
+
+min_max_scale <- function(x)
+{
+  low <- range(x)[1]
+  high <- range(x)[2]
+  
+  out <- (x - low)/(high - low)
+  return(out)
+  
+}
+
+colnames(crime_dat) <- c("long","lat","y")
+
+
+long <- crime_dat$long
+lat <- crime_dat$lat
+y <- crime_dat$y
+
+coordinates(crime_dat) <- ~ long + lat
+
+
+# Basis Function Generation
+
+
+gridbasis1 <- auto_basis(mainfold = plane(), data = crime_dat, nres = 1, type = "Gaussian", regular = 1)
+gridbasis2 <- auto_basis(mainfold = plane(), data = crime_dat, nres = 2, type = "Gaussian", regular = 1)
+gridbasis3 <- auto_basis(mainfold = plane(), data = crime_dat, nres = 3, type = "Gaussian", regular = 1)
+
+show_basis(gridbasis3) + 
+  coord_fixed() +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+basis_1 <- matrix(NA, nrow = nrow(crime_dat), ncol = length(gridbasis1@fn))
+for (i in 1:length(gridbasis1@fn)) {
+  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(crime_dat))
+}
+
+basis_2 <- matrix(NA, nrow = nrow(crime_dat), ncol = length(gridbasis2@fn))
+for (i in 1:length(gridbasis2@fn)) {
+  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(crime_dat))
+}
+
+basis_3 <- matrix(NA, nrow = nrow(crime_dat), ncol = length(gridbasis3@fn))
+for (i in 1:length(gridbasis3@fn)) {
+  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(crime_dat))
+}
+
+
+# Redefine three layers of basis images
+basis_use_1_2d <- basis_1
+basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
+basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
+
+# First resolution
+shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
+shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
+basis_arr_1 <- array(NA, dim = c(nrow(crime_dat), shape_row_1, shape_col_1))
+for (i in 1:nrow(crime_dat)) {
+  basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
+
+# Second resolution
+shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
+shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
+basis_arr_2 <- array(NA, dim = c(nrow(crime_dat), shape_row_2, shape_col_2))
+for (i in 1:nrow(crime_dat)) {
+  basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
+
+# Third resolution
+shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
+shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
+basis_arr_3 <- array(NA, dim = c(nrow(crime_dat), shape_row_3, shape_col_3))
+
+for (i in 1:nrow(crime_dat)) {
+  basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
+
+num_fold <- 5
+set.seed(0)
+train_index_all <- sample(1:num_fold, length(y), replace = T)
+loss_dnn <- rep(NA, num_fold)
+loss_dk <- rep(NA, num_fold)
+loss_ck <- rep(NA, num_fold)
+loss_inla <- rep(NA, num_fold)
+
+# pred_dnn <- rep(NA, length(y))
+# pred_dk <- rep(NA, length(y))
+# pred_ck <- rep(NA, length(y))
+# pred_inla <- rep(NA, length(y))
+```
+
+#DNN
+
+```{r}
+crime_dat <- aggregate(crime_temp[,3], by = list(crime_temp[,1], crime_temp[,2]), FUN = sum)
+
+crime_dat <- crime_dat[which(crime_dat[,1] >= -91),]
+
+for (curr_index in 1:num_fold) {
+  train_index <- which(train_index_all != curr_index)
+  
+  x_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[train_index,]
+  x_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[-train_index,]
+
+  y_tr <- y[train_index]
+  y_te <- y[-train_index]
+
+
+  model_dnn <- keras_model_sequential() 
+
+  model_dnn %>% 
+    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = "he_uniform") %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 1, activation = 'linear')
+
+# Compile the model
+
+model_dnn %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+  model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+  
+  
+mod_train_dnn <- model_dnn %>%
+  fit(x = x_tr, y = y_tr, epochs = 500, batch_size = 512, 
+      validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
+
+model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+
+loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
+# pred_dnn[-train_index] <- predict(model_dnn, x_te)
+
+}
+
+```
+
+# Deep Kriging
+
+```{r}
+
+
+for (curr_index in 1:num_fold) {
+  train_index <- which(train_index_all != curr_index)
+  basis_tr_1  <- basis_1[train_index,]
+  basis_te_1  <- basis_1[-train_index,]
+  
+  basis_tr_2  <- basis_2[train_index,]
+  basis_te_2  <- basis_2[-train_index,]
+  
+  basis_tr_3  <- basis_3[train_index,]
+  basis_te_3  <- basis_3[-train_index,]
+  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
+  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
+
+
+
+y_tr <- y[train_index]
+y_te <- y[-train_index]
+
+
+model_dk <- keras_model_sequential() 
+
+model_dk %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = "he_uniform") %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'linear')
+
+# Compile the model
+
+model_dk %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+
+  model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+  
+  
+  
+mod_train_dk <- model_dk %>%
+  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 512, 
+      validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
+
+
+model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+
+loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
+# pred_dk[-train_index] <- predict(model_dk, x_te)
+}
+```
+
+# Convolutional Kriging
+
+```{r}
+
+for (curr_index in 1:num_fold) {
+  
+train_index <- which(train_index_all != curr_index)
+basis_tr_1 <- array_reshape(basis_arr_1[train_index,,], c(length(train_index), shape_row_1, shape_col_1, 1))
+basis_tr_2 <- array_reshape(basis_arr_2[train_index,,], c(length(train_index), shape_row_2, shape_col_2, 1))
+basis_tr_3 <- array_reshape(basis_arr_3[train_index,,], c(length(train_index), shape_row_3, shape_col_3, 1))
+
+basis_te_1 <- array_reshape(basis_arr_1[-train_index,,], c(length(y) - length(train_index), shape_row_1, shape_col_1, 1))
+basis_te_2 <- array_reshape(basis_arr_2[-train_index,,], c(length(y) - length(train_index), shape_row_2, shape_col_2, 1))
+basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(y) - length(train_index), shape_row_3, shape_col_3, 1))
+
+cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[train_index,]
+cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,]
+
+drop = 0.2
+# We need three convolutional input model and adding covariates.
+input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
+input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
+input_basis_3 <- layer_input(shape = c(shape_row_3, shape_col_3, 1))
+input_cov <- layer_input(shape = ncol(cov_tr))
+
+
+resolution_1_conv <- input_basis_1 %>%
+  layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
+
+  layer_flatten() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu')
+
+  resolution_2_conv <- input_basis_2 %>%
+  layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_flatten() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu')
+  
+  resolution_3_conv <- input_basis_3 %>%
+  layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') %>%
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_flatten() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu')
+  
+  cov_model <- input_cov %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_batch_normalization() %>%
+  layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_batch_normalization() %>%
+  layer_dropout(drop) 
+
+
+all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, cov_model))
+
+output_layer <- all_model %>%  layer_dense(units = 1, activation = 'linear')
+
+model_ck <- keras_model(inputs = list(input_basis_1, input_basis_2, input_basis_3, input_cov), outputs = output_layer)
+
+model_ck <- 
+model_ck %>% compile(
+  optimizer = "adam",
+  loss = 'mse',
+  metrics = c('mse')
+)
+
+ model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+
+mod_train_ck <- model_ck %>% fit(
+  x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
+  y = y[train_index],
+  epochs=200,
+  batch_size=512,
+  validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
+  callbacks = model_checkpoint, shuffle = TRUE
+)
+
+model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+
+ loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
+ 
+   
+}
+
+```
+
+
+## INLA 
+```{r}
+library(INLA)
+library(rSPDE)
+library(gridExtra)
+library(lattice)
+
+for (curr_index in 1:num_fold) {
+train_index <- which(curr_index != train_index_all)
+long_tr <- long[train_index]
+lat_tr <- lat[train_index]
+y_tr <- y[train_index]
+coords <- cbind(long_tr, lat_tr)
+
+non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
+                      offset = c(0.5, 1),
+                      cutoff = 0.3)
+
+
+
+A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
+
+
+spde <- inla.spde2.matern(mesh4, alpha=0.5)
+iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
+
+stk <- inla.stack(data=list(y=y_tr), #the response
+                  
+                  A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
+                  
+                  effects=list(c(list(Intercept=1), #the Intercept
+                                 iset),  #the spatial index
+                               #the covariates
+                               list(long = long_tr,
+                                    lat = lat_tr)
+                  ), 
+                  
+                  #this is a quick name so you can call upon easily
+                  tag='dat')
+
+
+formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
+
+model0<-inla(formula0, #the formula
+             data=inla.stack.data(stk,spde=spde),  #the data stack
+             family= "exponential",   #which family the data comes from
+             control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
+             control.compute = list(dic = TRUE, waic = TRUE, config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+             verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
+
+
+
+
+long_te <- long[-train_index]
+lat_te <- lat[-train_index]
+y_te <- y[-train_index]
+
+
+test_coords <- cbind(long_te, lat_te)
+
+
+# Prediction
+Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
+
+stk.pred <- inla.stack(data=list(y=NA), 
+                       A=list(Aprediction,1), 
+                       effects=list(c(list(Intercept=1)
+                                      ,iset),
+                                    list(
+                                      long = long_te,
+                                      lat = lat_te
+                                    )
+                       ), 
+                       tag='pred')
+
+#join the prediction stack with the one for the full data
+stk.full <- inla.stack(stk, stk.pred)
+
+p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
+                 family= "exponential", quantiles = NULL,
+                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=FALSE),  #compute gives you the marginals of the linear predictor
+                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                 verbose = FALSE) 
+index.pred<-inla.stack.index(stk.full, "pred")$data
+
+loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
+
+}
+
+```
+
+```{r}
+
+loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
+   coord_flip()
+write.csv(as.data.frame(loss_all),here::here("other_dataset/data_candidate/chicago_crime/loss_chi.csv"),row.names = FALSE)
+loss_all <- read.csv(here::here("other_dataset/data_candidate/chicago_crime/loss_chi.csv"))
+loss_inla_ck <- loss_all[,c(1,4)]
+
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
+   coord_flip()
+
+
+```
+
+
+
+
+
+
+
+
+
