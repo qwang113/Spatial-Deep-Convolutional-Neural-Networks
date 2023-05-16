@@ -1,12 +1,11 @@
 ---
-title: "Chicago Crime Application"
+title: "Satellite Data Application"
 author: "Qi Wang"
 date: "2023-05-11"
 output: pdf_document
 ---
 
 ```{r}
-# The data set is from: https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2
 knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 library(FRK)
@@ -22,30 +21,6 @@ use_condaenv("tf_gpu")
 library(tensorflow)
 library(keras)
 
-chicago_crime <- read.csv("C:/Users/10616/Downloads/chicago_crime.csv")
-resolution <- 0.001
-create_grid <- function(x)
-{
-  result <- ifelse((x %% resolution) > resolution/2, ceiling(x / resolution) * resolution, floor(x / resolution) * resolution)
-  return(result)
-}
-# crime_loc <- cbind(round(na.omit(cbind(chicago_crime$Longitude, chicago_crime$Latitude)), 2),1)
-crime_loc <- matrix(sapply(na.omit(cbind(chicago_crime$Longitude, chicago_crime$Latitude)),create_grid ), ncol= 2)
-
-crime_temp <-  cbind(crime_loc, 1)
-
-crime_dat <- aggregate(crime_temp[,3], by = list(crime_temp[,1], crime_temp[,2]), FUN = sum)
-
-crime_dat <- crime_dat[which(crime_dat[,1] >= -91),]
-
-ggplot() +
-  geom_point(aes(x = crime_dat[,1], y = crime_dat[,2], color = crime_dat[,3]), size = 0.5) +
-  scale_color_viridis_c()
-
-
-
-
-
 min_max_scale <- function(x)
 {
   low <- range(x)[1]
@@ -56,41 +31,52 @@ min_max_scale <- function(x)
   
 }
 
-colnames(crime_dat) <- c("long","lat","y")
+load(here::here("other_dataset/data_candidate/satellite/SatelliteTemps.RData"))
+
+sat_raw <- na.omit(sat.temps)
+
+colnames(sat_raw) <- c("long","lat","y")
 
 
-long <- crime_dat$long
-lat <- crime_dat$lat
-y <- crime_dat$y
 
-coordinates(crime_dat) <- ~ long + lat
+sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+
+ ggplot() +
+   geom_point(aes(x = sat_dat[,1], y = sat_dat[,2]), size = 0.1)
+
+
+long <- sat_dat$long
+lat <- sat_dat$lat
+y <- sat_dat$y
+
+coordinates(sat_dat) <- ~ long + lat
 
 
 # Basis Function Generation
 
 
-gridbasis1 <- auto_basis(mainfold = plane(), data = crime_dat, nres = 1, type = "Gaussian", regular = 1)
-gridbasis2 <- auto_basis(mainfold = plane(), data = crime_dat, nres = 2, type = "Gaussian", regular = 1)
-gridbasis3 <- auto_basis(mainfold = plane(), data = crime_dat, nres = 3, type = "Gaussian", regular = 1)
+gridbasis1 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 1, type = "Gaussian", regular = 1)
+gridbasis2 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 2, type = "Gaussian", regular = 1)
+gridbasis3 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 3, type = "Gaussian", regular = 1)
 
 show_basis(gridbasis3) + 
   coord_fixed() +
   xlab("Longitude") +
   ylab("Latitude")
 
-basis_1 <- matrix(NA, nrow = nrow(crime_dat), ncol = length(gridbasis1@fn))
+basis_1 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis1@fn))
 for (i in 1:length(gridbasis1@fn)) {
-  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(crime_dat))
+  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(sat_dat))
 }
 
-basis_2 <- matrix(NA, nrow = nrow(crime_dat), ncol = length(gridbasis2@fn))
+basis_2 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
-  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(crime_dat))
+  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(sat_dat))
 }
 
-basis_3 <- matrix(NA, nrow = nrow(crime_dat), ncol = length(gridbasis3@fn))
+basis_3 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
-  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(crime_dat))
+  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(sat_dat))
 }
 
 
@@ -102,25 +88,25 @@ basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
-basis_arr_1 <- array(NA, dim = c(nrow(crime_dat), shape_row_1, shape_col_1))
-for (i in 1:nrow(crime_dat)) {
+basis_arr_1 <- array(NA, dim = c(nrow(sat_dat), shape_row_1, shape_col_1))
+for (i in 1:nrow(sat_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
-basis_arr_2 <- array(NA, dim = c(nrow(crime_dat), shape_row_2, shape_col_2))
-for (i in 1:nrow(crime_dat)) {
+basis_arr_2 <- array(NA, dim = c(nrow(sat_dat), shape_row_2, shape_col_2))
+for (i in 1:nrow(sat_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
 
 # Third resolution
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
-basis_arr_3 <- array(NA, dim = c(nrow(crime_dat), shape_row_3, shape_col_3))
+basis_arr_3 <- array(NA, dim = c(nrow(sat_dat), shape_row_3, shape_col_3))
 
-for (i in 1:nrow(crime_dat)) {
+for (i in 1:nrow(sat_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
 
@@ -141,9 +127,7 @@ loss_inla <- rep(NA, num_fold)
 #DNN
 
 ```{r}
-crime_dat <- aggregate(crime_temp[,3], by = list(crime_temp[,1], crime_temp[,2]), FUN = sum)
-
-crime_dat <- crime_dat[which(crime_dat[,1] >= -91),]
+sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
@@ -265,7 +249,7 @@ loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 }
 ```
 
-# Convolutional Kriging
+
 
 ```{r}
 
@@ -387,7 +371,8 @@ library(gridExtra)
 library(lattice)
 
 for (curr_index in 1:num_fold) {
-train_index <- which(curr_index != train_index_all)
+  train_index <- which(curr_index != train_index_all)
+  
 long_tr <- long[train_index]
 lat_tr <- lat[train_index]
 y_tr <- y[train_index]
@@ -425,7 +410,7 @@ formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde)
 
 model0<-inla(formula0, #the formula
              data=inla.stack.data(stk,spde=spde),  #the data stack
-             family= "exponential",   #which family the data comes from
+             family= 'gaussian',   #which family the data comes from
              control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
              control.compute = list(dic = TRUE, waic = TRUE, config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
              verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
@@ -459,7 +444,7 @@ stk.pred <- inla.stack(data=list(y=NA),
 stk.full <- inla.stack(stk, stk.pred)
 
 p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
-                 family= "exponential", quantiles = NULL,
+                 family= 'gaussian', quantiles = NULL,
                  control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=FALSE),  #compute gives you the marginals of the linear predictor
                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
                  control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
@@ -478,8 +463,8 @@ loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 ggplot() +
   geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
-write.csv(as.data.frame(loss_all),here::here("other_dataset/data_candidate/chicago_crime/loss_chi.csv"),row.names = FALSE)
-loss_all <- read.csv(here::here("other_dataset/data_candidate/chicago_crime/loss_chi.csv"))
+write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
+loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
 ggplot() +
