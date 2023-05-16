@@ -460,15 +460,16 @@ loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"m
 ```{r}
 
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
-   coord_flip()
+
 write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
 loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
 ggplot() +
   geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
+   coord_flip()
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
 
 
