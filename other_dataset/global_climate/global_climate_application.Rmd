@@ -386,14 +386,15 @@ library(gridExtra)
 library(lattice)
 
 for (curr_index in 1:num_fold) {
-  train_index <- which(curr_index != train_index_all)
+  print(paste("now doing index ", curr_index))
+train_index <- which(curr_index != train_index_all)
   
 long_tr <- long[train_index]
 lat_tr <- lat[train_index]
 y_tr <- y[train_index]
 coords <- cbind(long_tr, lat_tr) 
 
-non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(50, 50))
 mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
                       offset = c(0.5, 1),
                       cutoff = 0.3)
@@ -428,7 +429,7 @@ model0<-inla(formula0, #the formula
              family= 'gaussian',   #which family the data comes from
              control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
              control.compute = list(dic = TRUE, waic = TRUE, config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-             verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
+             verbose = FALSE, control.inla = control.inla(compute.initial.values = 1)) #can include verbose=TRUE to see the log of the model runs
 
 
 
@@ -478,7 +479,7 @@ loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
 write.csv(as.data.frame(loss_all),here::here("other_dataset/global_climate/glb_loss.csv"),row.names = FALSE)
 loss_all <- read.csv(here::here("other_dataset/global_climate/glb_loss.csv"))
-loss_inla_ck <- loss_all[,c(1,4)]
+
 
 ggplot() +
   geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
