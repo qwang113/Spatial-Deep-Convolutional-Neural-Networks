@@ -1,11 +1,12 @@
 ---
-title: "Satellite Data Application"
+title: "Global Climate Application"
 author: "Qi Wang"
 date: "2023-05-11"
 output: pdf_document
 ---
 
 ```{r}
+# https://www.worldclim.org/data/worldclim21.html
 knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 library(FRK)
@@ -20,7 +21,7 @@ library(reticulate)
 use_condaenv("tf_gpu")
 library(tensorflow)
 library(keras)
-
+library(raster)
 min_max_scale <- function(x)
 {
   low <- range(x)[1]
@@ -31,52 +32,63 @@ min_max_scale <- function(x)
   
 }
 
-load(here::here("other_dataset/satellite/SatelliteTemps.RData"))
+glb_dat <- raster(here::here("other_dataset/global_climate/wc2.1_10m_tmin_01.tif"))
 
-sat_raw <- na.omit(sat.temps)
+glb_long <- coordinates(glb_dat)[,1]
+glb_lat <- coordinates(glb_dat)[,2]
+response <- values(glb_dat)
+glb_raw <- cbind(glb_long, glb_lat, response)
 
-colnames(sat_raw) <- c("long","lat","y")
+resolution <- 0.3
+create_grid <- function(x)
+{
+  result <- ifelse((x %% resolution) > resolution/2, ceiling(x / resolution) * resolution, floor(x / resolution) * resolution)
+  return(result)
+}
+# crime_loc <- cbind(round(na.omit(cbind(chicago_crime$Longitude, chicago_crime$Latitude)), 2),1)
+round_loc <- cbind(matrix(sapply(na.omit(cbind(glb_long, glb_lat)),create_grid ), ncol= 2), response)
+
+colnames(round_loc) <- c("long","lat","y")
 
 
-
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+glb_dat <- aggregate(y ~ long + lat, data = round_loc, FUN = mean)
 
  ggplot() +
-   geom_point(aes(x = sat_dat[,1], y = sat_dat[,2]), size = 0.1)
+   geom_point(aes(x = glb_dat[,1], y = glb_dat[,2]), size = 0.1)
 
 
-long <- sat_dat$long
-lat <- sat_dat$lat
-y <- sat_dat$y
+long <- glb_dat$long
+lat <- glb_dat$lat
+y <- glb_dat$y
 
-coordinates(sat_dat) <- ~ long + lat
+coordinates(glb_dat) <- ~ long + lat
 
 
 # Basis Function Generation
 
 
-gridbasis1 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 1, type = "Gaussian", regular = 1)
-gridbasis2 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 2, type = "Gaussian", regular = 1)
-gridbasis3 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 3, type = "Gaussian", regular = 1)
+gridbasis1 <- auto_basis(mainfold = plane(), data = glb_dat, nres = 1, type = "Gaussian", regular = 1)
+gridbasis2 <- auto_basis(mainfold = plane(), data = glb_dat, nres = 2, type = "Gaussian", regular = 1)
+gridbasis3 <- auto_basis(mainfold = plane(), data = glb_dat, nres = 3, type = "Gaussian", regular = 1)
 
 show_basis(gridbasis3) + 
   coord_fixed() +
   xlab("Longitude") +
   ylab("Latitude")
 
-basis_1 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis1@fn))
+basis_1 <- matrix(NA, nrow = nrow(glb_dat), ncol = length(gridbasis1@fn))
 for (i in 1:length(gridbasis1@fn)) {
-  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(sat_dat))
+  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(glb_dat))
 }
 
-basis_2 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis2@fn))
+basis_2 <- matrix(NA, nrow = nrow(glb_dat), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
-  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(sat_dat))
+  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(glb_dat))
 }
 
-basis_3 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis3@fn))
+basis_3 <- matrix(NA, nrow = nrow(glb_dat), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
-  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(sat_dat))
+  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(glb_dat))
 }
 
 
@@ -88,25 +100,25 @@ basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
-basis_arr_1 <- array(NA, dim = c(nrow(sat_dat), shape_row_1, shape_col_1))
-for (i in 1:nrow(sat_dat)) {
+basis_arr_1 <- array(NA, dim = c(nrow(glb_dat), shape_row_1, shape_col_1))
+for (i in 1:nrow(glb_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
-basis_arr_2 <- array(NA, dim = c(nrow(sat_dat), shape_row_2, shape_col_2))
-for (i in 1:nrow(sat_dat)) {
+basis_arr_2 <- array(NA, dim = c(nrow(glb_dat), shape_row_2, shape_col_2))
+for (i in 1:nrow(glb_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
 
 # Third resolution
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
-basis_arr_3 <- array(NA, dim = c(nrow(sat_dat), shape_row_3, shape_col_3))
+basis_arr_3 <- array(NA, dim = c(nrow(glb_dat), shape_row_3, shape_col_3))
 
-for (i in 1:nrow(sat_dat)) {
+for (i in 1:nrow(glb_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
 
@@ -127,8 +139,11 @@ loss_inla <- rep(NA, num_fold)
 #DNN
 
 ```{r}
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+glb_dat <- aggregate(y ~ long + lat, data = glb_raw, FUN = mean)
+```
 
+
+```{r}
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
   
@@ -171,7 +186,7 @@ model_dnn %>% compile(
   
   
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 500, batch_size = 512, 
+  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
 model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
@@ -238,7 +253,7 @@ model_dk %>% compile(
   
   
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 512, 
+  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
@@ -348,7 +363,7 @@ mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
   epochs=200,
-  batch_size=512,
+  batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -376,7 +391,7 @@ for (curr_index in 1:num_fold) {
 long_tr <- long[train_index]
 lat_tr <- lat[train_index]
 y_tr <- y[train_index]
-coords <- cbind(long_tr, lat_tr)
+coords <- cbind(long_tr, lat_tr) 
 
 non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
 mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
@@ -461,8 +476,8 @@ loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"m
 
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
-write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
-loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
+write.csv(as.data.frame(loss_all),here::here("other_dataset/global_climate/glb_loss.csv"),row.names = FALSE)
+loss_all <- read.csv(here::here("other_dataset/global_climate/glb_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
 ggplot() +
