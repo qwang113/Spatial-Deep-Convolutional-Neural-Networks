@@ -593,6 +593,11 @@ int_score_dk <- all_interval_score(prediction_sample = pred_dk, true_x = y)
 int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
+ggplot() +
+  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(int_score_dnn,int_score_dk,int_score_ck,int_score_inla))), aes(x = variable, y = value)) +
+   coord_flip()
+
+
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
 print(paste("Interval Score of DK is: ", mean(int_score_dk)))
 print(paste("Interval Score of CK is: ", mean(int_score_ck )))
