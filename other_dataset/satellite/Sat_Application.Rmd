@@ -553,6 +553,11 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
+ggplot() +
+  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(crps_dnn_all,crps_dk_all,crps_ck_all,crps_inla_all))), aes(x = variable, y = value)) +
+   coord_flip()
+
+
 print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
 print(paste("CRPS of DK is: ", mean(crps_dk_all)))
 print(paste("CRPS of CK is: ", mean(crps_ck_all)))
@@ -565,7 +570,7 @@ print(paste("CRPS of INLA is: ", mean(crps_inla_all)))
 int_score <- function(l,u,true_x,alpha = 0.05){
   out_1 <- u-l
   out_2 <- 2/alpha * (l-true_x) * ifelse(true_x < l, 1, 0)
-  out_3 <- 2/alpha * (u-true_x) * ifelse(true_x > u, 1, 0)
+  out_3 <- 2/alpha * (true_x-u) * ifelse(true_x > u, 1, 0)
   return(out_1 + out_2 + out_3)
 }
 
