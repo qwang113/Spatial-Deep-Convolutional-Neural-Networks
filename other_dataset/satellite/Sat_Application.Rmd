@@ -496,8 +496,64 @@ ggplot() +
   geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
 
+write.csv(as.data.frame(pred_dnn),here::here("other_dataset/satellite/dnn_pred.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_dk),here::here("other_dataset/satellite/dk_pred.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_ck),here::here("other_dataset/satellite/ck_pred.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_inla),here::here("other_dataset/satellite/inla_pred.csv"),row.names = FALSE)
+
 
 ```
+
+
+```{r}
+
+load(here::here("other_dataset/satellite/SatelliteTemps.RData"))
+
+sat_raw <- na.omit(sat.temps)
+
+colnames(sat_raw) <- c("long","lat","y")
+
+
+
+sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+
+ ggplot() +
+   geom_point(aes(x = sat_dat[,1], y = sat_dat[,2]), size = 0.1)
+
+
+long <- sat_dat$long
+lat <- sat_dat$lat
+y <- sat_dat$y
+
+
+
+calculate_dist_between <- function(x){
+  return( mean(spDists(matrix(x, ncol = 1)))  )
+}
+
+calculate_dist_true <- function(x, true_x){
+  
+  return( mean(spDists(matrix(x, ncol = 1), matrix(true_x, ncol = 1))) )
+  
+}
+
+crps <- function(posterior_matrix, true_value){
+  
+  between_sample <- apply(posterior_matrix, 1, calculate_dist_between)
+  sample_residual <-  apply(posterior_matrix, 1, calculate_dist_true, true_x = true_value)
+  
+  res <- 0.5 * between_sample - sample_residual
+  return(out)
+}
+
+
+pred_dnn <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/dnn_pred.csv")))
+pred_dk <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/dk_pred.csv")))
+pred_ck <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/ck_pred.csv")))
+pred_inla <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/inla_pred.csv")))
+
+```
+
 
 
 
