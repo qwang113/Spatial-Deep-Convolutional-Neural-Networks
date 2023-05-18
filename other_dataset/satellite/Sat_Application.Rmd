@@ -111,6 +111,11 @@ for (i in 1:nrow(sat_dat)) {
 }
 
 num_fold <- 5
+num_sample <- 100
+pred_drop <- 0.2
+
+pred_drop_layer <- layer_dropout(rate=pred_drop)
+
 set.seed(0)
 train_index_all <- sample(1:num_fold, length(y), replace = T)
 loss_dnn <- rep(NA, num_fold)
@@ -118,10 +123,10 @@ loss_dk <- rep(NA, num_fold)
 loss_ck <- rep(NA, num_fold)
 loss_inla <- rep(NA, num_fold)
 
-# pred_dnn <- rep(NA, length(y))
-# pred_dk <- rep(NA, length(y))
-# pred_ck <- rep(NA, length(y))
-# pred_inla <- rep(NA, length(y))
+pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 ```
 
 #DNN
@@ -139,21 +144,23 @@ for (curr_index in 1:num_fold) {
   y_te <- y[-train_index]
 
 
-  model_dnn <- keras_model_sequential() 
+  dnn_input_layer <- layer_input(shape = c(ncol(x_tr))) 
 
-  model_dnn %>% 
-    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = "he_uniform") %>% 
-  layer_dropout(rate = 0.5) %>%
+  dnn_output_layer <- dnn_input_layer %>% 
+  layer_dense(units = 100, activation = 'relu',  kernel_initializer = "he_uniform") %>% 
+  pred_drop_layer(training = T) %>%
   layer_batch_normalization()%>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.5) %>%
+  pred_drop_layer(training = T) %>%
   layer_batch_normalization()%>%
   layer_dense(units = 100, activation = 'relu') %>%
-  layer_dropout(rate = 0.5) %>%
+  pred_drop_layer(training = T) %>%
   layer_batch_normalization()%>%
   layer_dense(units = 100, activation = 'relu') %>%
   layer_dense(units = 1, activation = 'linear')
 
+  
+  model_dnn <- keras_model(dnn_input_layer, dnn_output_layer)
 # Compile the model
 
 model_dnn %>% compile(
@@ -169,15 +176,19 @@ model_dnn %>% compile(
   verbose = 1
 )
   
-  
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 500, batch_size = 512, 
+  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
 model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
 loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
-# pred_dnn[-train_index] <- predict(model_dnn, x_te)
+
+for (j in 1:num_sample) {
+  print(j)
+  pred_dnn[-train_index,j] <- predict(model_dnn, x_te)
+}
+
 
 }
 
@@ -189,6 +200,7 @@ loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 
 
 for (curr_index in 1:num_fold) {
+  
   train_index <- which(train_index_all != curr_index)
   basis_tr_1  <- basis_1[train_index,]
   basis_te_1  <- basis_1[-train_index,]
@@ -201,23 +213,25 @@ for (curr_index in 1:num_fold) {
   x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
   x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
 
+  y_tr <- y[train_index]
+  y_te <- y[-train_index]
 
 
-y_tr <- y[train_index]
-y_te <- y[-train_index]
+  dk_input_layer <- layer_input(shape = c(ncol(x_tr))) 
 
-
-model_dk <- keras_model_sequential() 
-
-model_dk %>% 
-  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_tr)), kernel_initializer = "he_uniform") %>% 
-  layer_dropout(rate = 0.5) %>%
+  dk_output_layer <- dk_input_layer %>% 
+  layer_dense(units = 100, activation = 'relu', kernel_initializer = "he_uniform") %>% 
+  pred_drop_layer(training = T) %>%
   layer_batch_normalization() %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-  layer_dropout(rate = 0.5) %>%
+  pred_drop_layer(training = T) %>%
   layer_batch_normalization()%>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_dense(units = 1, activation = 'linear')
+  
+  
+  
+model_dk <- keras_model(dk_input_layer, dk_output_layer)
 
 # Compile the model
 
@@ -236,16 +250,20 @@ model_dk %>% compile(
 )
   
   
-  
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 512, 
+  fit(x = x_tr, y = y_tr, epochs =200, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
 model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
 loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
-# pred_dk[-train_index] <- predict(model_dk, x_te)
+
+for (j in 1:num_sample) {
+  print(j)
+  pred_dk[-train_index,j] <- predict(model_dk, x_te)
+}
+
 }
 ```
 
@@ -267,7 +285,6 @@ basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(y) - length(tr
 cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[train_index,]
 cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,]
 
-drop = 0.2
 # We need three convolutional input model and adding covariates.
 input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
 input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
@@ -277,50 +294,51 @@ input_cov <- layer_input(shape = ncol(cov_tr))
 
 resolution_1_conv <- input_basis_1 %>%
   layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
-
   layer_flatten() %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-
+  layer_batch_normalization() %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu') %>% 
-
+  layer_batch_normalization() %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu')
 
   resolution_2_conv <- input_basis_2 %>%
   layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_flatten() %>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu')
   
   resolution_3_conv <- input_basis_3 %>%
   layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') %>%
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_flatten() %>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu')
   
   cov_model <- input_cov %>%
   layer_dense(units = 100, activation = 'relu') %>% 
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu') %>%
   layer_batch_normalization() %>%
-  layer_dropout(drop) %>%
+  pred_drop_layer(training = T) %>%
   layer_dense(units = 100, activation = 'relu') %>%
   layer_batch_normalization() %>%
-  layer_dropout(drop) 
+  pred_drop_layer(training = T) 
 
 
 all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, cov_model))
@@ -348,7 +366,7 @@ mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
   epochs=200,
-  batch_size=512,
+  batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -356,7 +374,10 @@ mod_train_ck <- model_ck %>% fit(
 model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
 
  loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
- 
+ for (j in 1:num_sample) {
+  print(j)
+  pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
+}
    
 }
 
@@ -371,7 +392,7 @@ library(gridExtra)
 library(lattice)
 
 for (curr_index in 1:num_fold) {
-  train_index <- which(curr_index != train_index_all)
+train_index <- which(curr_index != train_index_all)
   
 long_tr <- long[train_index]
 lat_tr <- lat[train_index]
@@ -412,9 +433,8 @@ model0<-inla(formula0, #the formula
              data=inla.stack.data(stk,spde=spde),  #the data stack
              family= 'gaussian',   #which family the data comes from
              control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
-             control.compute = list(dic = TRUE, waic = TRUE, config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+             control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
              verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
-
 
 
 
@@ -445,12 +465,16 @@ stk.full <- inla.stack(stk, stk.pred)
 
 p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  family= 'gaussian', quantiles = NULL,
-                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=FALSE),  #compute gives you the marginals of the linear predictor
+                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
                  control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                  verbose = FALSE) 
+
 index.pred<-inla.stack.index(stk.full, "pred")$data
 
+# <- inla.posterior.sample(n = num_sample, p.res.pred)
+temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
 loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 
 }
