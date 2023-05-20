@@ -521,12 +521,12 @@ write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_mra.csv",row.
 ```{r}
 
 
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+mra_dat <- aggregate(y ~ long + lat, data = mra_raw, FUN = mean)
 
 
-long <- sat_dat$long
-lat <- sat_dat$lat
-y <- sat_dat$y
+long <- mra_dat$long
+lat <- mra_dat$lat
+y <- mra_dat$y
 
 library(verification)
 calculate_dist_between <- function(x){
@@ -551,10 +551,10 @@ crps <- function(prediction_matrix, true_value){
 }
 
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_mra.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_mra.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_mra.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_mra.csv"))
 
 library(scoringutils)
 crps_dnn_all <- crps(pred_dnn,y)
