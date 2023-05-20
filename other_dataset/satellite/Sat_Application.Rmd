@@ -169,7 +169,7 @@ model_dnn %>% compile(
   metrics = list("mse")
 )
   model_checkpoint <- callback_model_checkpoint(
-  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  filepath = "D:/77/research/temp/best_weights.h5",
   save_best_only = TRUE,
   monitor = "val_loss",
   mode = "min",
@@ -180,7 +180,7 @@ mod_train_dnn <- model_dnn %>%
   fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
-model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
 loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 
@@ -242,7 +242,7 @@ model_dk %>% compile(
 )
 
   model_checkpoint <- callback_model_checkpoint(
-  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  filepath = "D:/77/research/temp/best_weights.h5",
   save_best_only = TRUE,
   monitor = "val_loss",
   mode = "min",
@@ -255,7 +255,7 @@ mod_train_dk <- model_dk %>%
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
-model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
 loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 
@@ -267,7 +267,7 @@ for (j in 1:num_sample) {
 }
 ```
 
-
+#Convolutional Kriging
 
 ```{r}
 
@@ -355,7 +355,7 @@ model_ck %>% compile(
 )
 
  model_checkpoint <- callback_model_checkpoint(
-  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  filepath = "D:/77/research/temp/best_weights.h5",
   save_best_only = TRUE,
   monitor = "val_loss",
   mode = "min",
@@ -371,7 +371,7 @@ mod_train_ck <- model_ck %>% fit(
   callbacks = model_checkpoint, shuffle = TRUE
 )
 
-model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
  loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
  for (j in 1:num_sample) {
@@ -496,10 +496,10 @@ ggplot() +
   geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
 
-write.csv(as.data.frame(pred_dnn),here::here("other_dataset/satellite/dnn_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_dk),here::here("other_dataset/satellite/dk_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_ck),here::here("other_dataset/satellite/ck_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_inla),here::here("other_dataset/satellite/inla_pred.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/dnn_pred_sat.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/dk_pred_sat.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck),"D:/77/Reasearch/temp/ck_pred_sat.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_sat.csv",row.names = FALSE)
 
 
 ```
@@ -542,11 +542,11 @@ crps <- function(prediction_matrix, true_value){
 }
 
 
-pred_dnn <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/dnn_pred.csv")))
-pred_dk <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/dk_pred.csv")))
-pred_ck <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/ck_pred.csv")))
-pred_inla <- as.matrix(read.csv(here::here("D:/77/UCSC/study/Reasearch/temp/inla_pred.csv")))
-source(here::here("other_dataset/satellite/scoringRules_wrappers.R"))
+pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_sat.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_sat.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_sat.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_sat.csv"))
+#source(here::here("other_dataset/satellite/scoringRules_wrappers.R"))
 library(scoringutils)
 crps_dnn_all <- crps(pred_dnn,y)
 crps_dk_all <- crps(pred_dk,y)
