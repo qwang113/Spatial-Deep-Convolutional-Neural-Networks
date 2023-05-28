@@ -34,7 +34,7 @@ egg_fun <- function(x,y){
   out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -1000, to = 1000, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -100, to = 100, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -385,9 +385,13 @@ library(rSPDE)
 library(gridExtra)
 library(lattice)
 
+long <- expand.grid(long_grid, lat_grid)[,1]
+lat <- expand.grid(long_grid, lat_grid)[,2]
+
 for (curr_index in 1:num_fold) {
 train_index <- which(curr_index != train_index_all)
-  
+long <- min_max_scale(long) * 10
+lat <- min_max_scale(lat) * 10
 long_tr <- long[train_index]
 lat_tr <- lat[train_index]
 y_tr <- y[train_index]
@@ -428,7 +432,7 @@ model0<-inla(formula0, #the formula
              family= 'gaussian',   #which family the data comes from
              control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
              control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-             verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
+             verbose = TRUE) #can include verbose=TRUE to see the log of the model runs
 
 
 
@@ -479,8 +483,8 @@ loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"m
 
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
-write.csv(as.data.frame(loss_all),here::here("other_dataset/ehellite/eh_loss.csv"),row.names = FALSE)
-loss_all <- read.csv(here::here("other_dataset/ehellite/eh_loss.csv"))
+write.csv(as.data.frame(loss_all),here::here("Qi_simulation/eh_loss.csv"),row.names = FALSE)
+loss_all <- read.csv(here::here("Qi_simulation/eh_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
 ggplot() +
@@ -490,10 +494,10 @@ ggplot() +
   geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
 
-write.csv(as.data.frame(pred_dnn),here::here("other_dataset/ehellite/dnn_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_dk),here::here("other_dataset/ehellite/dk_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_ck),here::here("other_dataset/ehellite/ck_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_inla),here::here("other_dataset/ehellite/inla_pred.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/dnn_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/dk_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck),"D:/77/Reasearch/temp/ck_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_eh.csv",row.names = FALSE)
 
 
 ```
@@ -502,12 +506,19 @@ write.csv(as.data.frame(pred_inla),here::here("other_dataset/ehellite/inla_pred.
 ```{r}
 library(sp)
 library(ggplot2)
-load(here::here("other_dataset/ehellite/ehelliteTemps.RData"))
-eh_raw <- na.omit(eh.temps)
-colnames(eh_raw) <- c("long","lat","y")
 
 
-eh_dat <- aggregate(y ~ long + lat, data = eh_raw, FUN = mean)
+egg_fun <- function(x,y){
+  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+}
+
+long_grid = lat_grid <- seq(from = -1000, to = 1000, length.out = sim_size)
+
+y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
+
+long <- expand.grid(long_grid, lat_grid)[,1]
+lat <- expand.grid(long_grid, lat_grid)[,2]
+eh_dat <- data.frame(long = long, lat = lat, y = y)  
 
 
 long <- eh_dat$long
@@ -556,5 +567,67 @@ ggplot() +
   geom_density(aes(x = crps_dk_all, color = "DK")) +
   geom_density(aes(x = crps_ck_all, color = "CK")) +
   geom_density(aes(x = crps_inla_all, color = "INLA")) 
+
+print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
+print(paste("CRPS of DK is: ", mean(crps_dk_all)))
+print(paste("CRPS of CK is: ", mean(crps_ck_all)))
+print(paste("CRPS of INLA is: ", mean(crps_inla_all)))
+
+```
+
+
+# Interval Score Calculation
+
+```{r}
+int_score <- function(l,u,true_x,alpha = 0.05){
+  out_1 <- u-l
+  out_2 <- 2/alpha * (l-true_x) * ifelse(true_x < l, 1, 0)
+  out_3 <- 2/alpha * (true_x-u) * ifelse(true_x > u, 1, 0)
+  return(out_1 + out_2 + out_3)
+}
+
+all_interval_score <- function(prediction_sample, alpha = 0.05, true_x){
+  num_all <- length(true_x)
+ pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
+                     max = num_all, # Maximum value of the progress bar
+                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
+                     width = 50,   # Progress bar width. Defaults to getOption("width")
+                     char = "=")   # Character used to create the bar
+ 
   
+  all_score <- rep(NA, length(true_x))
+ for (int_score_idx in 1:length(true_x)) {
+   setTxtProgressBar(pb, int_score_idx)
+    l <- quantile(prediction_sample[int_score_idx,], alpha/2)
+    u <- quantile(prediction_sample[int_score_idx,], 1-alpha/2)
+    all_score[int_score_idx] <- int_score(l = l, u = u, true_x = true_x[int_score_idx], alpha = alpha)
+  }
+ return(all_score)
+}
+
+int_score_dnn <- all_interval_score(prediction_sample = pred_dnn, true_x = y)
+int_score_dk <- all_interval_score(prediction_sample = pred_dk, true_x = y)
+int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
+int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
+
+ggplot() +
+  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(int_score_dnn,int_score_dk,int_score_ck,int_score_inla))), aes(x = variable, y = value)) +
+   coord_flip()
+
+ggplot() +
+  geom_density(aes(x = int_score_dnn, color = "DNN")) +
+  geom_density(aes(x = int_score_dk, color = "DK")) +
+  geom_density(aes(x = int_score_ck, color = "CK")) +
+  geom_density(aes(x = int_score_inla, color = "INLA")) 
+
+
+
+print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
+print(paste("Interval Score of DK is: ", mean(int_score_dk)))
+print(paste("Interval Score of CK is: ", mean(int_score_ck )))
+print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
+
+```
+
+
   
