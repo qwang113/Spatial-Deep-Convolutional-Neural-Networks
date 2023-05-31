@@ -260,7 +260,7 @@ model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
 loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_all, # Maximum value of the progress bar
+                     max = num_sample, # Maximum value of the progress bar
                      style = 3,    # Progress bar style (also available style = 1 and style = 2)
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar
@@ -380,7 +380,7 @@ model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
  loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
   pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_all, # Maximum value of the progress bar
+                     max = num_sample, # Maximum value of the progress bar
                      style = 3,    # Progress bar style (also available style = 1 and style = 2)
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar
@@ -586,9 +586,9 @@ int_score <- function(l,u,true_x,alpha = 0.05){
 }
 
 all_interval_score <- function(prediction_sample, alpha = 0.05, true_x){
-  num_all <- length(true_x)
+  num_sample <- length(true_x)
  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_all, # Maximum value of the progress bar
+                     max = num_sample, # Maximum value of the progress bar
                      style = 3,    # Progress bar style (also available style = 1 and style = 2)
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar

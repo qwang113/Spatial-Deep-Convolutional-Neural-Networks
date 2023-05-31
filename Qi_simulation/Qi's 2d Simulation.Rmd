@@ -28,8 +28,7 @@ min_max_scale <- function(x)
 }
 
 sim_size = 300
-batch_size <- 256
-num_epoch <- 1000
+
 egg_fun <- function(x,y){
   out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
 }
@@ -204,8 +203,8 @@ for (curr_index in 1:num_fold) {
   
   basis_tr_3  <- basis_3[train_index,]
   basis_te_3  <- basis_3[-train_index,]
-  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
-  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
+  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
+  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,],basis_te_1, basis_te_2, basis_te_3)
 
   y_tr <- y[train_index]
   y_te <- y[-train_index]
@@ -276,8 +275,8 @@ basis_te_1 <- array_reshape(basis_arr_1[-train_index,,], c(length(y) - length(tr
 basis_te_2 <- array_reshape(basis_arr_2[-train_index,,], c(length(y) - length(train_index), shape_row_2, shape_col_2, 1))
 basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(y) - length(train_index), shape_row_3, shape_col_3, 1))
 
-cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[train_index,]
-cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,]
+cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,]
+cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,]
 
 # We need three convolutional input model and adding covariates.
 input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
@@ -512,7 +511,7 @@ egg_fun <- function(x,y){
   out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -1000, to = 1000, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -100, to = 100, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -559,9 +558,13 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-ggplot() +
-  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(crps_dnn_all,crps_dk_all,crps_ck_all,crps_inla_all))), aes(x = variable, y = value)) +
-   coord_flip()
+ggplot(data = reshape2::melt(as.data.frame(cbind(crps_dnn_all,crps_dk_all,crps_ck_all,crps_inla_all))), aes(x = variable, y = -value, fill = variable)) +
+  geom_boxplot() +
+    facet_zoom(ylim = c(0,5)) +
+  theme_classic()
+
+  
+
 ggplot() +
   geom_density(aes(x = crps_dnn_all, color = "DNN")) +
   geom_density(aes(x = crps_dk_all, color = "DK")) +
@@ -627,6 +630,16 @@ print(paste("Interval Score of DK is: ", mean(int_score_dk)))
 print(paste("Interval Score of CK is: ", mean(int_score_ck )))
 print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 
+```
+```{r}
+
+# facet_zoom() add some layers to the plot
+# Add uncertainty surface
+# Write all three datasets
+
+
+ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = y))
 ```
 
 
