@@ -5,18 +5,18 @@ library(reticulate)
 library(tensorflow)
 library(keras)
 
-
-# # Check/Install Python
- path_to_python <- install_python("3.9.10", force = TRUE)
- virtualenv_remove("r-reticulate")
- 
- 
- virtualenv_create("r-reticulate", python = path_to_python)
-
 # 
+# # # Check/Install Python
+#  path_to_python <- install_python("3.9.10", force = TRUE)
+#  virtualenv_remove("r-reticulate")
+#  
+#  
+#  virtualenv_create("r-reticulate", python = path_to_python)
 # 
-# # Install Tensorflow
- install_keras(envname = "r-reticulate")
+# # 
+# # 
+# # # Install Tensorflow
+#  install_keras(envname = "r-reticulate")
 
 
 
