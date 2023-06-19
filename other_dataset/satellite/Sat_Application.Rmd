@@ -51,6 +51,17 @@ y <- sat_dat$y
 
 coordinates(sat_dat) <- ~ long + lat
 
+grid_res <- 100
+grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
+grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
+
+grid_coords <- expand.grid(grid_long, grid_lat)
+grid_long <- as.matrix(grid_coords)[,1]
+grid_lat <- as.matrix(grid_coords)[,2]
+colnames(grid_coords) <- c("long", "lat")
+coordinates(grid_coords) <- ~ long + lat
+
+
 
 # Basis Function Generation
 
@@ -65,50 +76,80 @@ show_basis(gridbasis3) +
   ylab("Latitude")
 
 basis_1 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis1@fn))
+grid_basis_1 <- matrix(NA, nrow = length(grid_coords), ncol = length(gridbasis1@fn))
+
 for (i in 1:length(gridbasis1@fn)) {
   basis_1[,i] <- gridbasis1@fn[[i]](coordinates(sat_dat))
+  grid_basis_1[,i] <- gridbasis1@fn[[i]](coordinates(grid_coords))
 }
 
 basis_2 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis2@fn))
+grid_basis_2 <- matrix(NA, nrow = length(grid_coords), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
   basis_2[,i] <- gridbasis2@fn[[i]](coordinates(sat_dat))
+  grid_basis_2[,i] <- gridbasis2@fn[[i]](coordinates(grid_coords))
 }
 
 basis_3 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis3@fn))
+grid_basis_3 <- matrix(NA, nrow = length(grid_coords), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
   basis_3[,i] <- gridbasis3@fn[[i]](coordinates(sat_dat))
+  grid_basis_3[,i] <- gridbasis3@fn[[i]](coordinates(grid_coords))
 }
 
 
 # Redefine three layers of basis images
 basis_use_1_2d <- basis_1
+grid_basis_use_1_2d <- grid_basis_1
+
 basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
+grid_basis_use_2_2d <- grid_basis_3[,(ncol(grid_basis_1)+1):ncol(grid_basis_2)]
+
 basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
+grid_basis_use_3_2d <- grid_basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
-basis_arr_1 <- array(NA, dim = c(nrow(sat_dat), shape_row_1, shape_col_1))
+basis_arr_1 <-  array(NA, dim = c(nrow(sat_dat), shape_row_1, shape_col_1))
+grid_basis_arr_1 <- array(NA, dim = c(length(grid_coords), shape_row_1, shape_col_1))
 for (i in 1:nrow(sat_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
+for (i in 1:length(grid_coords)) {
+  grid_basis_arr_1[i,,] <- matrix(grid_basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
+
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
 basis_arr_2 <- array(NA, dim = c(nrow(sat_dat), shape_row_2, shape_col_2))
+grid_basis_arr_2 <- array(NA, dim = c(length(grid_coords), shape_row_2, shape_col_2))
+
 for (i in 1:nrow(sat_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
+
+for (i in 1:length(grid_coords)) {
+  grid_basis_arr_2[i,,] <- matrix(grid_basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
+
 
 # Third resolution
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
 basis_arr_3 <- array(NA, dim = c(nrow(sat_dat), shape_row_3, shape_col_3))
+grid_basis_arr_3 <- array(NA, dim = c(length(grid_coords), shape_row_3, shape_col_3))
 
 for (i in 1:nrow(sat_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
+
+for (i in 1:length(grid_coords)) {
+  grid_basis_arr_3[i,,] <- matrix(grid_basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
+
 
 num_fold <- 5
 num_sample <- 100
@@ -127,6 +168,12 @@ pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+
+grid_pred_dnn <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
+grid_pred_dk <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
+grid_pred_ck <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
+grid_pred_inla <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
+
 ```
 
 #DNN
@@ -139,7 +186,10 @@ for (curr_index in 1:num_fold) {
   
   x_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[train_index,]
   x_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[-train_index,]
-
+  
+  grid_te <- as.matrix(cbind((grid_long - min(long))/(max(long)-min(long)), 
+                             (grid_lat - min(lat))/(max(lat) - min(lat))))
+  
   y_tr <- y[train_index]
   y_te <- y[-train_index]
 
@@ -187,6 +237,7 @@ loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 for (j in 1:num_sample) {
   print(j)
   pred_dnn[-train_index,j] <- predict(model_dnn, x_te)
+  grid_pred_dnn[,j] <- predict(model_dnn, grid_te)
 }
 
 
@@ -212,6 +263,10 @@ for (curr_index in 1:num_fold) {
   basis_te_3  <- basis_3[-train_index,]
   x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
   x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
+  
+  grid_te <- as.matrix(cbind((grid_long - min(long))/(max(long)-min(long)), 
+                             (grid_lat - min(lat))/(max(lat) - min(lat)), grid_basis_1, grid_basis_2, grid_basis_3))
+  
 
   y_tr <- y[train_index]
   y_te <- y[-train_index]
@@ -262,6 +317,7 @@ loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 for (j in 1:num_sample) {
   print(j)
   pred_dk[-train_index,j] <- predict(model_dk, x_te)
+  grid_pred_dk <- predict(model_dk, grid_te)
 }
 
 }
@@ -282,9 +338,15 @@ basis_te_1 <- array_reshape(basis_arr_1[-train_index,,], c(length(y) - length(tr
 basis_te_2 <- array_reshape(basis_arr_2[-train_index,,], c(length(y) - length(train_index), shape_row_2, shape_col_2, 1))
 basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(y) - length(train_index), shape_row_3, shape_col_3, 1))
 
+grid_basis_te_1 <- array_reshape(grid_basis_arr_1, c(length(grid_coords) , shape_row_1, shape_col_1, 1))
+grid_basis_te_2 <- array_reshape(grid_basis_arr_2, c(length(grid_coords) , shape_row_2, shape_col_2, 1))
+grid_basis_te_3 <- array_reshape(grid_basis_arr_3, c(length(grid_coords) , shape_row_3, shape_col_3, 1))
+  
+  
 cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[train_index,]
 cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,]
-
+grid_cov_te <- as.matrix(cbind((grid_long - min(long))/(max(long)-min(long)), 
+                             (grid_lat - min(lat))/(max(lat) - min(lat))))
 # We need three convolutional input model and adding covariates.
 input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
 input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
@@ -377,6 +439,7 @@ model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
  for (j in 1:num_sample) {
   print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
+  grid_pred_ck <- predict(model_ck, list(grid_basis_te_1,grid_basis_te_2,grid_basis_te_3,grid_cov_te))
 }
    
 }
