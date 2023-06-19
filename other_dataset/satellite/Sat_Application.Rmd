@@ -508,9 +508,11 @@ y_te <- y[-train_index]
 
 test_coords <- cbind(long_te, lat_te)
 
+grid_test_coords <- cbind(grid_long, grid_lat)
 
 # Prediction
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
+Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords)
+grid_Aprediction <- inla.spde.make.A(mesh = mesh4, loc = grid_test_coords)
 
 stk.pred <- inla.stack(data=list(y=NA), 
                        A=list(Aprediction,1), 
@@ -523,8 +525,21 @@ stk.pred <- inla.stack(data=list(y=NA),
                        ), 
                        tag='pred')
 
+grid_stk.pred <- inla.stack(data=list(y=NA), 
+                       A=list(grid_Aprediction,1), 
+                       effects=list(c(list(Intercept=1)
+                                      ,iset),
+                                    list(
+                                      long = grid_long,
+                                      lat = grid_lat
+                                    )
+                       ), 
+                       tag='pred')
+
+
 #join the prediction stack with the one for the full data
 stk.full <- inla.stack(stk, stk.pred)
+grid_stk.full <- inla.stack(stk, grid_stk.pred)
 
 p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  family= 'gaussian', quantiles = NULL,
@@ -533,13 +548,24 @@ p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                  verbose = FALSE) 
 
-index.pred<-inla.stack.index(stk.full, "pred")$data
+grid_p.res.pred<-inla(formula0, data=inla.stack.data(grid_stk.full,spde=spde),
+                 family= 'gaussian', quantiles = NULL,
+                 control.predictor=list(link = 1, A=inla.stack.A(grid_stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
+                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                 verbose = FALSE) 
 
+
+
+index.pred<-inla.stack.index(stk.full, "pred")$data
+grid_index.prep <- inla.stack.index(grid_stk.full, "pred")$data
 # <- inla.posterior.sample(n = num_sample, p.res.pred)
 temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+grid_temp_pos_sample <- inla.posterior.sample(num_sample, grid_p.res.pred)
+
 pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
 loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
-
+grid_pred_inla <- matrix(sapply(grid_temp_pos_sample, function(lst) lst$latent[grid_index.prep]), ncol = num_sample)
 }
 
 ```
@@ -549,6 +575,12 @@ loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"m
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
 write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
+
+write.csv(as.data.frame(grid_pred_dnn),here::here("other_dataset/satellite/grid_pred_dnn.csv"),row.names = FALSE)
+write.csv(as.data.frame(grid_pred_dk),here::here("other_dataset/satellite/grid_pred_dk.csv"),row.names = FALSE)
+write.csv(as.data.frame(grid_pred_ck),here::here("other_dataset/satellite/grid_pred_ck.csv"),row.names = FALSE)
+write.csv(as.data.frame(grid_pred_inla),here::here("other_dataset/satellite/grid_pred_inla.csv"),row.names = FALSE)
+
 loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
