@@ -322,7 +322,7 @@ loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 for (j in 1:num_sample) {
   print(j)
   pred_dk[-train_index,j] <- predict(model_dk, x_te)
-  grid_pred_dk <- predict(model_dk, grid_te)
+  grid_pred_dk[,j] <- predict(model_dk, grid_te)
 }
 
 }
@@ -444,7 +444,7 @@ model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
  for (j in 1:num_sample) {
   print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
-  grid_pred_ck <- predict(model_ck, list(grid_basis_te_1,grid_basis_te_2,grid_basis_te_3,grid_cov_te))
+  grid_pred_ck[,j] <- predict(model_ck, list(grid_basis_te_1,grid_basis_te_2,grid_basis_te_3,grid_cov_te))
 }
    
 }
@@ -581,10 +581,10 @@ loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
 write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
 
-write.csv(as.data.frame(grid_pred_dnn),here::here("other_dataset/satellite/grid_pred_dnn.csv"),row.names = FALSE)
-write.csv(as.data.frame(grid_pred_dk),here::here("other_dataset/satellite/grid_pred_dk.csv"),row.names = FALSE)
-write.csv(as.data.frame(grid_pred_ck),here::here("other_dataset/satellite/grid_pred_ck.csv"),row.names = FALSE)
-write.csv(as.data.frame(grid_pred_inla),here::here("other_dataset/satellite/grid_pred_inla.csv"),row.names = FALSE)
+# write.csv(as.data.frame(grid_pred_dnn),here::here("other_dataset/satellite/grid_pred_dnn.csv"),row.names = FALSE)
+# write.csv(as.data.frame(grid_pred_dk),here::here("other_dataset/satellite/grid_pred_dk.csv"),row.names = FALSE)
+# write.csv(as.data.frame(grid_pred_ck),here::here("other_dataset/satellite/grid_pred_ck.csv"),row.names = FALSE)
+# write.csv(as.data.frame(grid_pred_inla),here::here("other_dataset/satellite/grid_pred_inla.csv"),row.names = FALSE)
 
 loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
@@ -730,6 +730,59 @@ print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 
 ```{r}
 # Prediction surface and uncertainty surface
+library(FRK)
+library(spNNGP)
+library(ggplot2)
+library(maps)
+library(MBA)
+library(fields)
+library(sp)
+library(ncdf4)
+library(reticulate)
+use_condaenv("tf_gpu")
+library(tensorflow)
+library(keras)
+
+min_max_scale <- function(x)
+{
+  low <- range(x)[1]
+  high <- range(x)[2]
+  
+  out <- (x - low)/(high - low)
+  return(out)
+  
+}
+
+load(here::here("other_dataset/satellite/SatelliteTemps.RData"))
+
+sat_raw <- na.omit(sat.temps)
+
+colnames(sat_raw) <- c("long","lat","y")
+
+
+
+sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+
+ ggplot() +
+   geom_point(aes(x = sat_dat[,1], y = sat_dat[,2]), size = 0.1)
+
+
+long <- sat_dat$long
+lat <- sat_dat$lat
+y <- sat_dat$y
+
+coordinates(sat_dat) <- ~ long + lat
+
+grid_res <- 100
+grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
+grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
+
+grid_coords <- expand.grid(grid_long, grid_lat)
+grid_long <- as.matrix(grid_coords)[,1]
+grid_lat <- as.matrix(grid_coords)[,2]
+colnames(grid_coords) <- c("long", "lat")
+coordinates(grid_coords) <- ~ long + lat
+
 
 grid_pred_dnn <- read.csv("D:/77/Reasearch/temp/grid_pred_dnn.csv")
 grid_pred_dk <- read.csv("D:/77/Reasearch/temp/grid_pred_dk.csv")
@@ -738,10 +791,45 @@ grid_pred_inla <- read.csv("D:/77/Reasearch/temp/grid_pred_inla.csv")
 
 
 ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = y ) )
+  geom_raster(aes(x = long, y = lat, fill = y ) ) +
+  scale_fill_viridis()
 
 ggplot() +
-  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_dnn, 1, mean) ))
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_dnn, 1, mean) )) +
+  scale_fill_viridis()
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_dk, 1, mean) )) +
+  scale_fill_viridis()
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_ck, 1, mean) )) +
+  scale_fill_viridis()
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_inla, 1, mean) )) +
+  scale_fill_viridis()
+
+#uncertainty
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_dnn, 1, sd) )) +
+  scale_fill_viridis()
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_dk, 1, sd) )) +
+  scale_fill_viridis()
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_ck, 1, sd) )) +
+  scale_fill_viridis()
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_inla, 1, sd) )) +
+  scale_fill_viridis()
+
+
+
 ```
 
 
