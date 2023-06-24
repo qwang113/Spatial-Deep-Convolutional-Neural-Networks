@@ -174,6 +174,11 @@ grid_pred_dk <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
 grid_pred_ck <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
 grid_pred_inla <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
 
+
+
+
+
+
 ```
 
 #DNN
@@ -719,6 +724,24 @@ print(paste("Interval Score of DK is: ", mean(int_score_dk)))
 print(paste("Interval Score of CK is: ", mean(int_score_ck )))
 print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 
+```
+
+
+
+```{r}
+# Prediction surface and uncertainty surface
+
+grid_pred_dnn <- read.csv("D:/77/Reasearch/temp/grid_pred_dnn.csv")
+grid_pred_dk <- read.csv("D:/77/Reasearch/temp/grid_pred_dk.csv")
+grid_pred_ck <- read.csv("D:/77/Reasearch/temp/grid_pred_ck.csv")
+grid_pred_inla <- read.csv("D:/77/Reasearch/temp/grid_pred_inla.csv")
+
+
+ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = y ) )
+
+ggplot() +
+  geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_dnn, 1, mean) ))
 ```
 
 
