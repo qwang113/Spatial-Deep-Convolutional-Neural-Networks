@@ -1,3 +1,117 @@
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reticulate)
+library(keras)
+library(tensorflow)
+library(sp)
+library(fields)
+library(FRK)
+use_condaenv("tf_gpu")
+
+min_max_scale <- function(x)
+{
+  low <- range(x)[1]
+  high <- range(x)[2]
+  
+  out <- (x - low)/(high - low)
+  return(out)
+  
+}
+
+sim_size = 300
+
+egg_fun <- function(x,y){
+  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+}
+
+long_grid = lat_grid <- seq(from = -100, to = 100, length.out = sim_size)
+
+y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
+
+long <- expand.grid(long_grid, lat_grid)[,1]
+lat <- expand.grid(long_grid, lat_grid)[,2]
+eh_dat <- data.frame(long = long, lat = lat, y = y)  
+
+coordinates(eh_dat) <- ~ long + lat
+
+
+
+gridbasis1 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 1, type = "Gaussian", regular = 1)
+gridbasis2 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 2, type = "Gaussian", regular = 1)
+gridbasis3 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 3, type = "Gaussian", regular = 1)
+
+show_basis(gridbasis3) + 
+  coord_fixed() +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+basis_1 <- matrix(NA, nrow = nrow(eh_dat), ncol = length(gridbasis1@fn))
+for (i in 1:length(gridbasis1@fn)) {
+  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(eh_dat))
+}
+
+basis_2 <- matrix(NA, nrow = nrow(eh_dat), ncol = length(gridbasis2@fn))
+for (i in 1:length(gridbasis2@fn)) {
+  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(eh_dat))
+}
+
+basis_3 <- matrix(NA, nrow = nrow(eh_dat), ncol = length(gridbasis3@fn))
+for (i in 1:length(gridbasis3@fn)) {
+  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(eh_dat))
+}
+
+
+# Redefine three layers of basis images
+basis_use_1_2d <- basis_1
+basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
+basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
+
+# First resolution
+shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
+shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
+basis_arr_1 <- array(NA, dim = c(nrow(eh_dat), shape_row_1, shape_col_1))
+for (i in 1:nrow(eh_dat)) {
+  basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
+
+# Second resolution
+shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
+shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
+basis_arr_2 <- array(NA, dim = c(nrow(eh_dat), shape_row_2, shape_col_2))
+for (i in 1:nrow(eh_dat)) {
+  basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
+
+# Third resolution
+shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
+shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
+basis_arr_3 <- array(NA, dim = c(nrow(eh_dat), shape_row_3, shape_col_3))
+
+for (i in 1:nrow(eh_dat)) {
+  basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
+
+num_fold <- 5
+num_sample <- 100
+pred_drop <- 0.2
+
+pred_drop_layer <- layer_dropout(rate=pred_drop)
+
+set.seed(0)
+train_index_all <- sample(1:num_fold, length(y), replace = T)
+pred_empty_area_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_empty_area_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_empty_area_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_empty_area_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+
+test_area_index <- which(long >= 60 & long <=80 & lat >=0 & lat <=50 )
+
+
+
+
+
+
 
 # Prediction with an empty area DNN -------------------------------------------------------------------
 
@@ -58,9 +172,6 @@ for (curr_index in 1:num_fold) {
   
   
 }
-
-
-
 
 
 
