@@ -808,7 +808,7 @@ ggplot() +
 
 ggplot() +
   geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_inla, 1, mean) )) +
-  scale_fill_viridis()
+  scale_fill_viridis(limits = c(20,55))
 
 #uncertainty
 
@@ -826,7 +826,7 @@ ggplot() +
 
 ggplot() +
   geom_raster(aes(x = grid_long, y = grid_lat, fill = apply(grid_pred_inla, 1, sd) )) +
-  scale_fill_viridis()
+  scale_fill_viridis(limits = c(0,2))
 
 
 
