@@ -371,9 +371,14 @@ for (curr_index in 1:num_fold) {
 
 
 # Prediction with empty area INLA --------------------------------------------------------------
-
+library(INLA)
+library(rSPDE)
+library(gridExtra)
+library(lattice)
 for (curr_index in 1:num_fold) {
-  train_index <- which(curr_index != train_index_all[-test_area_index])
+  train_index_temp <- which(train_index_all != curr_index)
+  train_index <- train_index_temp[!(train_index_temp %in% test_area_index)]
+  
   long <- min_max_scale(long) * 10
   lat <- min_max_scale(lat) * 10
   long_tr <- long[train_index]
@@ -459,4 +464,11 @@ for (curr_index in 1:num_fold) {
   pred_empty_area_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
   
 }
+
+
+write.csv(as.data.frame(pred_empty_area_dnn),"D:/77/Reasearch/temp/dnn_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_dk),"D:/77/Reasearch/temp/dk_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_ck),"D:/77/Reasearch/temp/ck_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_inla),"D:/77/Reasearch/temp/inla_pred_empty_area_eh.csv",row.names = FALSE)
+
 
