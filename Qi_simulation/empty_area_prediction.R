@@ -105,7 +105,7 @@ pred_empty_area_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_empty_area_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_empty_area_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
-test_area_index <- which(long >= 60 & long <=80 & lat >=0 & lat <=50 )
+test_area_index <- which(long >= 500 & long <=800 & lat >= -500 & lat <=500 )
 
 
 
