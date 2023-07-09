@@ -17,6 +17,9 @@ library(fields)
 library(FRK)
 use_condaenv("tf_gpu")
 
+
+
+
 min_max_scale <- function(x)
 {
   low <- range(x)[1]
@@ -33,7 +36,7 @@ egg_fun <- function(x,y){
   out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -1000, to = 1000, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -43,7 +46,25 @@ eh_dat <- data.frame(long = long, lat = lat, y = y)
 
 coordinates(eh_dat) <- ~ long + lat
 
+# Parameters setting
+set.seed(0)
+num_fold <- 5
+num_sample <- 100
+pred_drop <- 0.2
+train_index_all <- sample(1:num_fold, length(y), replace = T)
+loss_dnn <- rep(NA, num_fold)
+loss_dk <- rep(NA, num_fold)
+loss_ck <- rep(NA, num_fold)
+loss_inla <- rep(NA, num_fold)
 
+pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+
+
+
+# Basis Generating
 
 gridbasis1 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 1, type = "Gaussian", regular = 1)
 gridbasis2 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 2, type = "Gaussian", regular = 1)
@@ -100,28 +121,11 @@ for (i in 1:nrow(eh_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
 
-num_fold <- 5
-num_sample <- 100
-pred_drop <- 0.2
 
 pred_drop_layer <- layer_dropout(rate=pred_drop)
 
-set.seed(0)
-train_index_all <- sample(1:num_fold, length(y), replace = T)
-loss_dnn <- rep(NA, num_fold)
-loss_dk <- rep(NA, num_fold)
-loss_ck <- rep(NA, num_fold)
-loss_inla <- rep(NA, num_fold)
 
-pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
-pred_empty_area_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_empty_area_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_empty_area_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_empty_area_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
 
 
@@ -401,92 +405,91 @@ long <- expand.grid(long_grid, lat_grid)[,1]
 lat <- expand.grid(long_grid, lat_grid)[,2]
 
 for (curr_index in 1:num_fold) {
-train_index <- which(curr_index != train_index_all)
-long <- min_max_scale(long) * 10
-lat <- min_max_scale(lat) * 10
-long_tr <- long[train_index]
-lat_tr <- lat[train_index]
-y_tr <- y[train_index]
-coords <- cbind(long_tr, lat_tr)
-
-non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                      offset = c(0.5, 1),
-                      cutoff = 0.3)
-
-
-
-A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
-
-
-spde <- inla.spde2.matern(mesh4, alpha=0.5)
-iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
-
-stk <- inla.stack(data=list(y=y_tr), #the response
-                  
-                  A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
-                  
-                  effects=list(c(list(Intercept=1), #the Intercept
-                                 iset),  #the spatial index
-                               #the covariates
-                               list(long = long_tr,
-                                    lat = lat_tr)
-                  ), 
-                  
-                  #this is a quick name so you can call upon easily
-                  tag='dat')
-
-
-formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
-
-model0<-inla(formula0, #the formula
-             data=inla.stack.data(stk,spde=spde),  #the data stack
-             family= 'gaussian',   #which family the data comes from
-             control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
-             control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-             verbose = TRUE) #can include verbose=TRUE to see the log of the model runs
-
-
-
-long_te <- long[-train_index]
-lat_te <- lat[-train_index]
-y_te <- y[-train_index]
-
-
-test_coords <- cbind(long_te, lat_te)
-
-
-# Prediction
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
-
-stk.pred <- inla.stack(data=list(y=NA), 
-                       A=list(Aprediction,1), 
-                       effects=list(c(list(Intercept=1)
-                                      ,iset),
-                                    list(
-                                      long = long_te,
-                                      lat = lat_te
-                                    )
-                       ), 
-                       tag='pred')
-
-#join the prediction stack with the one for the full data
-stk.full <- inla.stack(stk, stk.pred)
-
-p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
-                 family= 'gaussian', quantiles = NULL,
-                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
-                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
-                 verbose = FALSE) 
-
-index.pred<-inla.stack.index(stk.full, "pred")$data
-
-# <- inla.posterior.sample(n = num_sample, p.res.pred)
-temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
-pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
-
+  train_index <- which(train_index_all != curr_index)
+  long <- min_max_scale(long) * 10
+  lat <- min_max_scale(lat) * 10
+  long_tr <- long[train_index]
+  lat_tr <- lat[train_index]
+  y_tr <- y[train_index]
+  coords <- cbind(long_tr, lat_tr)
+  
+  non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
+                        offset = c(0.5, 1),
+                        cutoff = 0.3)
+  
+  
+  
+  A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
+  
+  
+  spde <- inla.spde2.matern(mesh4, alpha=0.5)
+  iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
+  
+  stk <- inla.stack(data=list(y=y_tr), #the response
+                    
+                    A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
+                    
+                    effects=list(c(list(Intercept=1), #the Intercept
+                                   iset),  #the spatial index
+                                 #the covariates
+                                 list(long = long_tr,
+                                      lat = lat_tr)
+                    ), 
+                    
+                    #this is a quick name so you can call upon easily
+                    tag='dat')
+  
+  
+  formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
+  
+  model0<-inla(formula0, #the formula
+               data=inla.stack.data(stk,spde=spde),  #the data stack
+               family= 'gaussian',   #which family the data comes from
+               control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
+               control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+               verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
+  
+  
+  
+  long_te <- long[-train_index]
+  lat_te <- lat[-train_index]
+  y_te <- y[-train_index]
+  
+  
+  test_coords <- cbind(long_te, lat_te)
+  
+  
+  # Prediction
+  Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
+  
+  stk.pred <- inla.stack(data=list(y=NA), 
+                         A=list(Aprediction,1), 
+                         effects=list(c(list(Intercept=1)
+                                        ,iset),
+                                      list(
+                                        long = long_te,
+                                        lat = lat_te
+                                      )
+                         ), 
+                         tag='pred')
+  
+  #join the prediction stack with the one for the full data
+  stk.full <- inla.stack(stk, stk.pred)
+  
+  p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
+                   family= 'gaussian', quantiles = NULL,
+                   control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
+                   control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+                   control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                   verbose = FALSE) 
+  
+  index.pred<-inla.stack.index(stk.full, "pred")$data
+  
+  # <- inla.posterior.sample(n = num_sample, p.res.pred)
+  temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+  pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
+  
 }
 
 
@@ -529,7 +532,7 @@ egg_fun <- function(x,y){
   out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -100, to = 100, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -662,7 +665,7 @@ pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_eh.csv"))
 pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_eh.csv"))
 
 
-long_grid = lat_grid <- seq(from = -100, to = 100, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -708,98 +711,6 @@ ggplot() +
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, sd))) +
   scale_fill_viridis()
-
-
-
-# mean with empty block------------------------------------------------------------------
-
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
-  scale_fill_viridis() +
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-  
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, mean))) +
-  scale_fill_viridis()+
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, mean))) +
-  scale_fill_viridis()+
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, mean))) +
-  scale_fill_viridis() +
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-  
-
-
-
-
-# uncertainty with empty block------------------------------------------------------------------
-
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, sd))) +
-  scale_fill_viridis() +
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-  
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, sd))) +
-  scale_fill_viridis()+
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, sd))) +
-  scale_fill_viridis()+
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, sd))) +
-  scale_fill_viridis() +
-  geom_line(aes(x = c(60,80),y = c(0,0)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,80),y = c(50,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(60,60),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") +
-  geom_line(aes(x = c(80,80),y = c(0,50)), color = "red", linewidth = 0.5, linetype = "dashed") 
-  
-
 
 
 ```
