@@ -114,3 +114,14 @@ ggplot() +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = -250.5, linetype = "dashed") 
 
 
+# Scores (crps)------------------------------------------------------------------
+
+library(ggforce)
+ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all))), aes(x = variable, y = -value, fill = variable)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("INLA", "DNN", "DK","CK")) +
+  scale_fill_manual(values = c("crps_inla_all" = "blue", "crps_dnn_all" = "red", "crps_dk_all" = "green", "crps_ck_all" = "purple"),
+                    labels = c("INLA", "DNN", "DK", "CK")) +
+  labs(fill = "Model") +
+  facet_zoom(ylim = c(0,25)) +
+  theme_classic()

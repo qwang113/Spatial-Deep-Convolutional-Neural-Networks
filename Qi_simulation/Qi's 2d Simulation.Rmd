@@ -489,7 +489,7 @@ for (curr_index in 1:num_fold) {
   # <- inla.posterior.sample(n = num_sample, p.res.pred)
   temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
   pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-  
+  loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
 
 
@@ -524,26 +524,12 @@ write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_eh.csv",row.n
 # CRPS Calculation
 
 ```{r}
-library(sp)
-library(ggplot2)
-
-
-egg_fun <- function(x,y){
-  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
-}
-
 long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
 long <- expand.grid(long_grid, lat_grid)[,1]
 lat <- expand.grid(long_grid, lat_grid)[,2]
-eh_dat <- data.frame(long = long, lat = lat, y = y)  
-
-
-long <- eh_dat$long
-lat <- eh_dat$lat
-y <- eh_dat$y
 
 library(verification)
 calculate_dist_between <- function(x){
@@ -567,23 +553,30 @@ crps <- function(prediction_matrix, true_value){
   return(res)
 }
 
-
 pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_eh.csv"))
 pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_eh.csv"))
 pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_eh.csv"))
 pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_eh.csv"))
-#source(here::here("other_dataset/ehellite/scoringRules_wrappers.R"))
-library(scoringutils)
+
+
+
 crps_dnn_all <- crps(pred_dnn,y)
 crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
-library(ggforce)
 
-ggplot(data = reshape2::melt(as.data.frame(cbind(crps_dnn_all,crps_dk_all,crps_ck_all,crps_inla_all))), aes(x = variable, y = -value, fill = variable)) +
-  geom_boxplot() +
-    facet_zoom(ylim = c(0,5)) +
-  theme_classic()
+write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_eh.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_eh.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_eh.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_eh.csv",row.names = FALSE)
+
+
+crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dnn_eh.csv"))
+crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dk_eh.csv"))
+crps_ck_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_ck_eh.csv"))
+crps_inla_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_inla_eh.csv"))
+
+
 
   
 
