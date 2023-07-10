@@ -25,7 +25,7 @@ egg_fun <- function(x,y){
   out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -1000, to = 1000, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 

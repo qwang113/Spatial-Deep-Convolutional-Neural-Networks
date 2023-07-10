@@ -565,26 +565,15 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_eh.csv",row.names = FALSE)
-write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_eh.csv",row.names = FALSE)
-write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_eh.csv",row.names = FALSE)
-write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_eh.csv",row.names = FALSE)
-
+# write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_eh.csv",row.names = FALSE)
+# write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_eh.csv",row.names = FALSE)
+# write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_eh.csv",row.names = FALSE)
+# write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_eh.csv",row.names = FALSE)
 
 crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dnn_eh.csv"))
 crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dk_eh.csv"))
 crps_ck_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_ck_eh.csv"))
 crps_inla_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_inla_eh.csv"))
-
-
-
-  
-
-ggplot() +
-  geom_density(aes(x = crps_dnn_all, color = "DNN")) +
-  geom_density(aes(x = crps_dk_all, color = "DK")) +
-  geom_density(aes(x = crps_ck_all, color = "CK")) +
-  geom_density(aes(x = crps_inla_all, color = "INLA")) 
 
 print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
 print(paste("CRPS of DK is: ", mean(crps_dk_all)))
@@ -628,16 +617,11 @@ int_score_dk <- all_interval_score(prediction_sample = pred_dk, true_x = y)
 int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
-ggplot() +
-  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(int_score_dnn,int_score_dk,int_score_ck,int_score_inla))), aes(x = variable, y = value)) +
-   coord_flip()
 
-ggplot() +
-  geom_density(aes(x = int_score_dnn, color = "DNN")) +
-  geom_density(aes(x = int_score_dk, color = "DK")) +
-  geom_density(aes(x = int_score_ck, color = "CK")) +
-  geom_density(aes(x = int_score_inla, color = "INLA")) 
-
+write.csv(int_score_dnn,"D:/77/Reasearch/temp/int_dnn_eh.csv",row.names = FALSE)
+write.csv(int_score_dk,"D:/77/Reasearch/temp/int_dk_eh.csv",row.names = FALSE)
+write.csv(int_score_ck,"D:/77/Reasearch/temp/int_ck_eh.csv",row.names = FALSE)
+write.csv(int_score_inla,"D:/77/Reasearch/temp/int_inla_eh.csv",row.names = FALSE)
 
 
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
@@ -652,58 +636,8 @@ print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 # Add uncertainty surface
 # Write all three datasets
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_eh.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_eh.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_eh.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_eh.csv"))
 
 
-long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
-
-y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-
-# mean -------------------------------------------------------------------------------------
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = y)) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, mean))) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_dk, 1, mean))) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_ck, 1, mean))) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, mean))) +
-  scale_fill_viridis()
-
-# uncertainty --------------------------------------------------------------------------------
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, sd))) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_dk, 1, sd))) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_ck, 1, sd))) +
-  scale_fill_viridis()
-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, sd))) +
-  scale_fill_viridis()
 
 
 ```
