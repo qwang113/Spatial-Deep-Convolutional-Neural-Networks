@@ -164,7 +164,7 @@ ggplot() +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Deep Kriging Standard Deviation Surface(Empty Block Added") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Deep Kriging Standard Deviation Surface(Empty Block Added)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -176,7 +176,7 @@ ggplot() +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Convolutional Kriging Standard Deviation Surface(Empty Block Added") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Convolutional Kriging Standard Deviation Surface(Empty Block Added)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -188,7 +188,7 @@ ggplot() +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation Surface(Empty Block Added") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation Surface(Empty Block Added)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 

@@ -105,7 +105,7 @@ pred_empty_area_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_empty_area_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_empty_area_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
-test_area_index <- which(long >= 500 & long <=800 & lat >= -500 & lat <=500 )
+test_area_index <- which(long >= 300 & long <=400 & lat >= -250 & lat <= 250 )
 
 
 
@@ -159,7 +159,7 @@ for (curr_index in 1:num_fold) {
   )
   
   mod_train_dnn <- model_dnn %>%
-    fit(x = x_tr, y = y_tr, epochs = 500, batch_size = 1000, 
+    fit(x = x_tr, y = y_tr, epochs = 1000, batch_size = 1000, 
         validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
   
   model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
@@ -235,7 +235,7 @@ for (curr_index in 1:num_fold) {
   
   
   mod_train_dk <- model_dk %>%
-    fit(x = x_tr, y = y_tr, epochs =200, batch_size = 1000, 
+    fit(x = x_tr, y = y_tr, epochs =500, batch_size = 1000, 
         validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
   
   
@@ -352,7 +352,7 @@ for (curr_index in 1:num_fold) {
   mod_train_ck <- model_ck %>% fit(
     x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
     y = y[train_index],
-    epochs=200,
+    epochs=500,
     batch_size=1000,
     validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
     callbacks = model_checkpoint, shuffle = TRUE
