@@ -156,7 +156,7 @@ ggplot() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
-
+sd_sur_dk_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, sd))) +
   scale_fill_viridis_c()+
@@ -168,7 +168,7 @@ ggplot() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
-
+sd_sur_ck_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, sd))) +
   scale_fill_viridis_c()+
@@ -180,7 +180,7 @@ ggplot() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
-
+sd_sur_inla_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, sd))) +
   scale_fill_viridis_c() +
@@ -193,41 +193,53 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 
 # mean with empty block------------------------------------------------------------------
-
+pred_sur_dnn_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
   scale_fill_viridis_c() +
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") 
+  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
-
+pred_sur_dk_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, mean))) +
   scale_fill_viridis_c()+
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") 
+  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
-
+pred_sur_ck_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, mean))) +
   scale_fill_viridis_c()+
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") 
+  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
-
+pred_sur_inla_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, mean))) +
   scale_fill_viridis_c() +
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") 
+  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
 
 # Scores (crps)------------------------------------------------------------------
