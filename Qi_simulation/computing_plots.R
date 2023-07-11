@@ -59,15 +59,30 @@ long <- expand.grid(long_grid, lat_grid)[,1]
 lat <- expand.grid(long_grid, lat_grid)[,2]
 
 
-# mean -------------------------------------------------------------------------------------
+
 obs_sur <- 
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = y)) +
   scale_fill_viridis_c() + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "True Surface") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5)) 
 
+obs_sur_emp <- 
+  ggplot() +
+  geom_raster(aes(x = long[-test_area_index], y = lat[-test_area_index], fill = y[-test_area_index])) +
+  scale_fill_viridis_c() + 
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "True Surface with Empty Block") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")
+
+
+
+# mean -------------------------------------------------------------------------------------
 pred_sur_dnn <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, mean))) +
@@ -139,11 +154,6 @@ sd_sur_inla <-
 
 # uncertainty with empty block------------------------------------------------------------------
 
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-
-
 sd_sur_dnn_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, sd))) +
@@ -193,11 +203,6 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 
 # mean with empty block------------------------------------------------------------------
-
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-
 
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
