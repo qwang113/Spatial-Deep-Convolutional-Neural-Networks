@@ -49,17 +49,7 @@ ggplot() +
   theme(legend.justification = "center")
 
 
-# EH Shape ------------------------------------------
-
-long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
-
-y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-
-
-
+# EH Shape ---------------------------------------------------------------------------
 obs_sur <- 
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = y)) +
