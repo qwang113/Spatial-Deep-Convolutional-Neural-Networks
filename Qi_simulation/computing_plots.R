@@ -7,6 +7,11 @@ pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_eh.csv"))
 pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_eh.csv"))
 pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_eh.csv"))
 
+pred_empty_area_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_empty_area_eh.csv"))
+pred_empty_area_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_empty_area_eh.csv"))
+pred_empty_area_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_empty_area_eh.csv"))
+pred_empty_area_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_empty_area_eh.csv"))
+
 crps_dnn_all <- matrix(read.csv("D:/77/Reasearch/temp/crps_dnn_eh.csv")$x, ncol = 1)
 crps_dk_all <- matrix(read.csv("D:/77/Reasearch/temp/crps_dk_eh.csv")$x, ncol = 1)
 crps_ck_all <- matrix(read.csv("D:/77/Reasearch/temp/crps_ck_eh.csv")$x, ncol = 1)
@@ -16,13 +21,6 @@ int_score_dnn <- matrix(read.csv("D:/77/Reasearch/temp/int_dnn_eh.csv")$x, ncol 
 int_score_dk <- matrix(read.csv("D:/77/Reasearch/temp/int_dk_eh.csv")$x, ncol = 1)
 int_score_ck <- matrix(read.csv("D:/77/Reasearch/temp/int_ck_eh.csv")$x, ncol = 1)
 int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/int_inla_eh.csv")$x, ncol = 1)
-
-
-pred_empty_area_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_empty_area_eh.csv"))
-pred_empty_area_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_empty_area_eh.csv"))
-pred_empty_area_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_empty_area_eh.csv"))
-pred_empty_area_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_empty_area_eh.csv"))
-
 
 
 
