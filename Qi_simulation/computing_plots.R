@@ -24,6 +24,12 @@ int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/int_inla_eh.csv")$x, nco
 
 
 
+sim_size = 300
+
+egg_fun <- function(x,y){
+  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+}
+
 long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
@@ -103,13 +109,21 @@ ggplot() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
+cowplot::plot_grid(pred_sur_inla, pred_sur_dnn, pred_sur_dk, pred_sur_ck)
+
 # uncertainty --------------------------------------------------------------------------------
 
+upper <- max(c(
+  apply(pred_dnn, 1, sd),
+  apply(pred_dk, 1, sd),
+  apply(pred_ck, 1, sd),
+  apply(pred_inla, 1, sd)
+)) 
 
 sd_sur_dnn <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, sd))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = c(0, upper)) + 
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -117,7 +131,7 @@ sd_sur_dnn <-
 sd_sur_dk <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dk, 1, sd))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = c(0, upper)) + 
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Deep Kriging Standard Deviation Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -125,7 +139,7 @@ sd_sur_dk <-
 sd_sur_ck <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_ck, 1, sd))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = c(0, upper)) + 
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Convolutional Kriging Standard Deviation Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -133,111 +147,122 @@ sd_sur_ck <-
 sd_sur_inla <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, sd))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = c(0, upper)) + 
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
-
+cowplot::plot_grid(sd_sur_inla, sd_sur_dnn, sd_sur_dk, sd_sur_ck)
 
 # uncertainty with empty block------------------------------------------------------------------
+
+
+upper_emp <- max(c(
+  apply(pred_empty_area_dnn, 1, sd),
+  apply(pred_empty_area_dk, 1, sd),
+  apply(pred_empty_area_ck, 1, sd),
+  apply(pred_empty_area_inla, 1, sd)
+)) 
+
 
 sd_sur_dnn_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, sd))) +
-  scale_fill_viridis_c() +
+  scale_fill_viridis_c(limits = c(0,upper_emp)) +
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation Surface(Empty Block Added") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 sd_sur_dk_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, sd))) +
-  scale_fill_viridis_c()+
+  scale_fill_viridis_c(limits = c(0,upper_emp)) +
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Deep Kriging Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DK Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 sd_sur_ck_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, sd))) +
-  scale_fill_viridis_c()+
+  scale_fill_viridis_c(limits = c(0,upper_emp)) +
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Convolutional Kriging Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CK Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 sd_sur_inla_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, sd))) +
-  scale_fill_viridis_c() +
+  scale_fill_viridis_c(limits = c(0,upper_emp)) +
   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
-# mean with empty block------------------------------------------------------------------
-pred_sur_dnn_emp <-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
-  scale_fill_viridis_c() +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Standard Deviation Surface(Empty Block Added)") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+cowplot::plot_grid(sd_sur_inla_emp, sd_sur_dnn_emp, sd_sur_dk_emp, sd_sur_ck_emp)
 
-pred_sur_dk_emp <-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, mean))) +
-  scale_fill_viridis_c()+
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Standard Deviation Surface(Empty Block Added)") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-pred_sur_ck_emp <-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, mean))) +
-  scale_fill_viridis_c()+
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Standard Deviation Surface(Empty Block Added)") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-pred_sur_inla_emp <-
-ggplot() +
-  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, mean))) +
-  scale_fill_viridis_c() +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Standard Deviation Surface(Empty Block Added)") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+# # mean with empty block------------------------------------------------------------------
+# pred_sur_dnn_emp <-
+# ggplot() +
+#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
+#   scale_fill_viridis_c() +
+#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Standard Deviation Surface(Empty Block Added)") +
+#   theme_bw() +
+#   theme(plot.title = element_text(hjust = 0.5))
+# 
+# pred_sur_dk_emp <-
+# ggplot() +
+#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, mean))) +
+#   scale_fill_viridis_c()+
+#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Standard Deviation Surface(Empty Block Added)") +
+#   theme_bw() +
+#   theme(plot.title = element_text(hjust = 0.5))
+# 
+# pred_sur_ck_emp <-
+# ggplot() +
+#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, mean))) +
+#   scale_fill_viridis_c()+
+#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Standard Deviation Surface(Empty Block Added)") +
+#   theme_bw() +
+#   theme(plot.title = element_text(hjust = 0.5))
+# 
+# pred_sur_inla_emp <-
+# ggplot() +
+#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, mean))) +
+#   scale_fill_viridis_c() +
+#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
+#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Standard Deviation Surface(Empty Block Added)") +
+#   theme_bw() +
+#   theme(plot.title = element_text(hjust = 0.5))
 
 
 # Scores (crps)------------------------------------------------------------------
