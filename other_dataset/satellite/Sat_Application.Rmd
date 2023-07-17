@@ -31,35 +31,19 @@ min_max_scale <- function(x)
   
 }
 
-load(here::here("other_dataset/satellite/SatelliteTemps.RData"))
-
-sat_raw <- na.omit(sat.temps)
-
-colnames(sat_raw) <- c("long","lat","y")
-
-
-
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
-
- ggplot() +
-   geom_point(aes(x = sat_dat[,1], y = sat_dat[,2]), size = 0.1)
-
-
+load(here::here("other_dataset/satellite/AllSatelliteTemps.RData"))
+sat_dat <- na.omit(all.sat.temps[,c(1,2,4)])
+colnames(sat_dat) <- c("long","lat", "y")
 long <- sat_dat$long
 lat <- sat_dat$lat
 y <- sat_dat$y
 
-coordinates(sat_dat) <- ~ long + lat
-
-grid_res <- 100
-grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
-grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
-
-grid_coords <- expand.grid(grid_long, grid_lat)
-grid_long <- as.matrix(grid_coords)[,1]
-grid_lat <- as.matrix(grid_coords)[,2]
-colnames(grid_coords) <- c("long", "lat")
-coordinates(grid_coords) <- ~ long + lat
+ #use_index <- which(lat <= 36.5 & lat >= 34 & long <= -92 & long >= -93 )
+ # long <- long[use_index]
+ # lat <- lat[use_index]
+ # y <- y[use_index]
+ # sat_dat <- sat_dat[use_index,]
+ coordinates(sat_dat) <- ~ long + lat
 
 
 
@@ -76,63 +60,46 @@ show_basis(gridbasis3) +
   ylab("Latitude")
 
 basis_1 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis1@fn))
-grid_basis_1 <- matrix(NA, nrow = length(grid_coords), ncol = length(gridbasis1@fn))
+
 
 for (i in 1:length(gridbasis1@fn)) {
   basis_1[,i] <- gridbasis1@fn[[i]](coordinates(sat_dat))
-  grid_basis_1[,i] <- gridbasis1@fn[[i]](coordinates(grid_coords))
 }
 
 basis_2 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis2@fn))
-grid_basis_2 <- matrix(NA, nrow = length(grid_coords), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
   basis_2[,i] <- gridbasis2@fn[[i]](coordinates(sat_dat))
-  grid_basis_2[,i] <- gridbasis2@fn[[i]](coordinates(grid_coords))
 }
 
 basis_3 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis3@fn))
-grid_basis_3 <- matrix(NA, nrow = length(grid_coords), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
-  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(sat_dat))
-  grid_basis_3[,i] <- gridbasis3@fn[[i]](coordinates(grid_coords))
-}
+   basis_3[,i] <- gridbasis3@fn[[i]](coordinates(sat_dat))
+ }
 
 
 # Redefine three layers of basis images
 basis_use_1_2d <- basis_1
-grid_basis_use_1_2d <- grid_basis_1
 
 basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
-grid_basis_use_2_2d <- grid_basis_3[,(ncol(grid_basis_1)+1):ncol(grid_basis_2)]
 
 basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
-grid_basis_use_3_2d <- grid_basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
 basis_arr_1 <-  array(NA, dim = c(nrow(sat_dat), shape_row_1, shape_col_1))
-grid_basis_arr_1 <- array(NA, dim = c(length(grid_coords), shape_row_1, shape_col_1))
+
 for (i in 1:nrow(sat_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
-for (i in 1:length(grid_coords)) {
-  grid_basis_arr_1[i,,] <- matrix(grid_basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
-}
-
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
 basis_arr_2 <- array(NA, dim = c(nrow(sat_dat), shape_row_2, shape_col_2))
-grid_basis_arr_2 <- array(NA, dim = c(length(grid_coords), shape_row_2, shape_col_2))
 
 for (i in 1:nrow(sat_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
-}
-
-for (i in 1:length(grid_coords)) {
-  grid_basis_arr_2[i,,] <- matrix(grid_basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
 
 
@@ -140,16 +107,10 @@ for (i in 1:length(grid_coords)) {
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
 basis_arr_3 <- array(NA, dim = c(nrow(sat_dat), shape_row_3, shape_col_3))
-grid_basis_arr_3 <- array(NA, dim = c(length(grid_coords), shape_row_3, shape_col_3))
 
 for (i in 1:nrow(sat_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
-
-for (i in 1:length(grid_coords)) {
-  grid_basis_arr_3[i,,] <- matrix(grid_basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
-}
-
 
 num_fold <- 5
 num_sample <- 100
@@ -169,32 +130,17 @@ pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
-grid_pred_dnn <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
-grid_pred_dk <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
-grid_pred_ck <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
-grid_pred_inla <- matrix(NA,nrow = length(grid_coords), ncol = num_sample)
-
-
-
-
-
-
 ```
-
 #DNN
 
 ```{r}
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
   
   x_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[train_index,]
   x_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[-train_index,]
-  
-  grid_te <- as.matrix(cbind((grid_long - min(long))/(max(long)-min(long)), 
-                             (grid_lat - min(lat))/(max(lat) - min(lat))))
-  
+
   y_tr <- y[train_index]
   y_te <- y[-train_index]
 
@@ -232,7 +178,7 @@ model_dnn %>% compile(
 )
   
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 1000, 
+  fit(x = x_tr, y = y_tr, epochs = 1000, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
 model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
@@ -242,18 +188,18 @@ loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 for (j in 1:num_sample) {
   print(j)
   pred_dnn[-train_index,j] <- predict(model_dnn, x_te)
-  grid_pred_dnn[,j] <- predict(model_dnn, grid_te)
 }
 
 
 }
+
+
 
 ```
 
 # Deep Kriging
 
 ```{r}
-
 
 for (curr_index in 1:num_fold) {
   
@@ -266,12 +212,8 @@ for (curr_index in 1:num_fold) {
   
   basis_tr_3  <- basis_3[train_index,]
   basis_te_3  <- basis_3[-train_index,]
-  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
-  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
-  
-  grid_te <- as.matrix(cbind((grid_long - min(long))/(max(long)-min(long)), 
-                             (grid_lat - min(lat))/(max(lat) - min(lat)), grid_basis_1, grid_basis_2, grid_basis_3))
-  
+  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
+  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,],basis_te_1, basis_te_2, basis_te_3)
 
   y_tr <- y[train_index]
   y_te <- y[-train_index]
@@ -311,7 +253,7 @@ model_dk %>% compile(
   
   
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs =200, batch_size = 1000, 
+  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
@@ -322,10 +264,10 @@ loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 for (j in 1:num_sample) {
   print(j)
   pred_dk[-train_index,j] <- predict(model_dk, x_te)
-  grid_pred_dk[,j] <- predict(model_dk, grid_te)
 }
 
 }
+
 ```
 
 #Convolutional Kriging
@@ -343,15 +285,9 @@ basis_te_1 <- array_reshape(basis_arr_1[-train_index,,], c(length(y) - length(tr
 basis_te_2 <- array_reshape(basis_arr_2[-train_index,,], c(length(y) - length(train_index), shape_row_2, shape_col_2, 1))
 basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(y) - length(train_index), shape_row_3, shape_col_3, 1))
 
-grid_basis_te_1 <- array_reshape(grid_basis_arr_1, c(length(grid_coords) , shape_row_1, shape_col_1, 1))
-grid_basis_te_2 <- array_reshape(grid_basis_arr_2, c(length(grid_coords) , shape_row_2, shape_col_2, 1))
-grid_basis_te_3 <- array_reshape(grid_basis_arr_3, c(length(grid_coords) , shape_row_3, shape_col_3, 1))
-  
-  
-cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[train_index,]
-cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,]
-grid_cov_te <- as.matrix(cbind((grid_long - min(long))/(max(long)-min(long)), 
-                             (grid_lat - min(lat))/(max(lat) - min(lat))))
+cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,]
+cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,]
+
 # We need three convolutional input model and adding covariates.
 input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
 input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
@@ -384,7 +320,7 @@ resolution_1_conv <- input_basis_1 %>%
   layer_dense(units = 100, activation = 'relu')
   
   resolution_3_conv <- input_basis_3 %>%
-  layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') %>%
+  layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
   layer_batch_normalization() %>%
   pred_drop_layer(training = T) %>%
   layer_flatten() %>%
@@ -432,8 +368,8 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
-  epochs=200,
-  batch_size=1000,
+  epochs=500,
+  batch_size=500,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -444,10 +380,12 @@ model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
  for (j in 1:num_sample) {
   print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
-  grid_pred_ck[,j] <- predict(model_ck, list(grid_basis_te_1,grid_basis_te_2,grid_basis_te_3,grid_cov_te))
 }
    
 }
+
+
+
 
 ```
 
@@ -460,132 +398,104 @@ library(gridExtra)
 library(lattice)
 
 for (curr_index in 1:num_fold) {
-train_index <- which(curr_index != train_index_all)
+  train_index <- which(train_index_all != curr_index)
+  long <- min_max_scale(long) * 10
+  lat <- min_max_scale(lat) * 10
+  long_tr <- long[train_index]
+  lat_tr <- lat[train_index]
+  y_tr <- y[train_index]
+  coords <- cbind(long_tr, lat_tr)
   
-long_tr <- long[train_index]
-lat_tr <- lat[train_index]
-y_tr <- y[train_index]
-coords <- cbind(long_tr, lat_tr)
-
-non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                      offset = c(0.5, 1),
-                      cutoff = 0.3)
-
-
-
-A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
-
-
-spde <- inla.spde2.matern(mesh4, alpha=0.5)
-iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
-
-stk <- inla.stack(data=list(y=y_tr), #the response
-                  
-                  A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
-                  
-                  effects=list(c(list(Intercept=1), #the Intercept
-                                 iset),  #the spatial index
-                               #the covariates
-                               list(long = long_tr,
-                                    lat = lat_tr)
-                  ), 
-                  
-                  #this is a quick name so you can call upon easily
-                  tag='dat')
-
-
-formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
-
-model0<-inla(formula0, #the formula
-             data=inla.stack.data(stk,spde=spde),  #the data stack
-             family= 'gaussian',   #which family the data comes from
-             control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
-             control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-             verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
-
-
-
-long_te <- long[-train_index]
-lat_te <- lat[-train_index]
-y_te <- y[-train_index]
-
-
-test_coords <- cbind(long_te, lat_te)
-
-grid_test_coords <- cbind(grid_long, grid_lat)
-
-# Prediction
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords)
-grid_Aprediction <- inla.spde.make.A(mesh = mesh4, loc = grid_test_coords)
-
-stk.pred <- inla.stack(data=list(y=NA), 
-                       A=list(Aprediction,1), 
-                       effects=list(c(list(Intercept=1)
-                                      ,iset),
-                                    list(
-                                      long = long_te,
-                                      lat = lat_te
-                                    )
-                       ), 
-                       tag='pred')
-
-grid_stk.pred <- inla.stack(data=list(y=NA), 
-                       A=list(grid_Aprediction,1), 
-                       effects=list(c(list(Intercept=1)
-                                      ,iset),
-                                    list(
-                                      long = grid_long,
-                                      lat = grid_lat
-                                    )
-                       ), 
-                       tag='pred')
-
-
-#join the prediction stack with the one for the full data
-stk.full <- inla.stack(stk, stk.pred)
-grid_stk.full <- inla.stack(stk, grid_stk.pred)
-
-p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
-                 family= 'gaussian', quantiles = NULL,
-                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
-                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
-                 verbose = FALSE) 
-
-grid_p.res.pred<-inla(formula0, data=inla.stack.data(grid_stk.full,spde=spde),
-                 family= 'gaussian', quantiles = NULL,
-                 control.predictor=list(link = 1, A=inla.stack.A(grid_stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
-                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
-                 verbose = FALSE) 
-
-
-
-index.pred<-inla.stack.index(stk.full, "pred")$data
-grid_index.prep <- inla.stack.index(grid_stk.full, "pred")$data
-# <- inla.posterior.sample(n = num_sample, p.res.pred)
-temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
-grid_temp_pos_sample <- inla.posterior.sample(num_sample, grid_p.res.pred)
-
-pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
-grid_pred_inla <- matrix(sapply(grid_temp_pos_sample, function(lst) lst$latent[grid_index.prep]), ncol = num_sample)
+  non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
+                        offset = c(0.5, 1),
+                        cutoff = 0.3)
+  
+  
+  
+  A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
+  
+  
+  spde <- inla.spde2.matern(mesh4, alpha=0.5)
+  iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
+  
+  stk <- inla.stack(data=list(y=y_tr), #the response
+                    
+                    A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
+                    
+                    effects=list(c(list(Intercept=1), #the Intercept
+                                   iset),  #the spatial index
+                                 #the covariates
+                                 list(long = long_tr,
+                                      lat = lat_tr)
+                    ), 
+                    
+                    #this is a quick name so you can call upon easily
+                    tag='dat')
+  
+  
+  formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
+  
+  model0<-inla(formula0, #the formula
+               data=inla.stack.data(stk,spde=spde),  #the data stack
+               family= 'gaussian',   #which family the data comes from
+               control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
+               control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+               verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
+  
+  
+  
+  long_te <- long[-train_index]
+  lat_te <- lat[-train_index]
+  y_te <- y[-train_index]
+  
+  
+  test_coords <- cbind(long_te, lat_te)
+  
+  
+  # Prediction
+  Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
+  
+  stk.pred <- inla.stack(data=list(y=NA), 
+                         A=list(Aprediction,1), 
+                         effects=list(c(list(Intercept=1)
+                                        ,iset),
+                                      list(
+                                        long = long_te,
+                                        lat = lat_te
+                                      )
+                         ), 
+                         tag='pred')
+  
+  #join the prediction stack with the one for the full data
+  stk.full <- inla.stack(stk, stk.pred)
+  
+  p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
+                   family= 'gaussian', quantiles = NULL,
+                   control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
+                   control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+                   control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                   verbose = FALSE) 
+  
+  index.pred<-inla.stack.index(stk.full, "pred")$data
+  
+  # <- inla.posterior.sample(n = num_sample, p.res.pred)
+  temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+  pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
+  loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
 
+
+
 ```
+
+
 
 ```{r}
 
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
 write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
-
-# write.csv(as.data.frame(grid_pred_dnn),here::here("other_dataset/satellite/grid_pred_dnn.csv"),row.names = FALSE)
-# write.csv(as.data.frame(grid_pred_dk),here::here("other_dataset/satellite/grid_pred_dk.csv"),row.names = FALSE)
-# write.csv(as.data.frame(grid_pred_ck),here::here("other_dataset/satellite/grid_pred_ck.csv"),row.names = FALSE)
-# write.csv(as.data.frame(grid_pred_inla),here::here("other_dataset/satellite/grid_pred_inla.csv"),row.names = FALSE)
-
 loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
@@ -595,11 +505,11 @@ ggplot() +
 ggplot() +
   geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
    coord_flip()
-
-write.csv(as.data.frame(pred_dnn),here::here("other_dataset/satellite/dnn_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_dk),here::here("other_dataset/satellite/dk_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_ck),here::here("other_dataset/satellite/ck_pred.csv"),row.names = FALSE)
-write.csv(as.data.frame(pred_inla),here::here("other_dataset/satellite/inla_pred.csv"),row.names = FALSE)
+# 
+# write.csv(as.data.frame(pred_dnn),here::here("other_dataset/satellite/dnn_pred.csv"),row.names = FALSE)
+# write.csv(as.data.frame(pred_dk),here::here("other_dataset/satellite/dk_pred.csv"),row.names = FALSE)
+# write.csv(as.data.frame(pred_ck),here::here("other_dataset/satellite/ck_pred.csv"),row.names = FALSE)
+# write.csv(as.data.frame(pred_inla),here::here("other_dataset/satellite/inla_pred.csv"),row.names = FALSE)
 
 
 ```
@@ -613,7 +523,7 @@ sat_raw <- na.omit(sat.temps)
 colnames(sat_raw) <- c("long","lat","y")
 
 
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
+sat_dat <- aggregate(y ~ long + lat, data = all.sat.temps, FUN = mean)
 
 
 long <- sat_dat$long
@@ -729,19 +639,7 @@ print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 
 
 ```{r}
-# Prediction surface and uncertainty surface
-library(FRK)
-library(spNNGP)
-library(ggplot2)
-library(maps)
-library(MBA)
-library(fields)
-library(sp)
-library(ncdf4)
-library(reticulate)
-use_condaenv("tf_gpu")
-library(tensorflow)
-library(keras)
+
 
 min_max_scale <- function(x)
 {
@@ -753,35 +651,10 @@ min_max_scale <- function(x)
   
 }
 
-load(here::here("other_dataset/satellite/SatelliteTemps.RData"))
 
-sat_raw <- na.omit(sat.temps)
-
-colnames(sat_raw) <- c("long","lat","y")
-
-
-
-sat_dat <- aggregate(y ~ long + lat, data = sat_raw, FUN = mean)
-
- ggplot() +
-   geom_point(aes(x = sat_dat[,1], y = sat_dat[,2]), size = 0.1)
-
-
-long <- sat_dat$long
-lat <- sat_dat$lat
-y <- sat_dat$y
-
-coordinates(sat_dat) <- ~ long + lat
-
-grid_res <- 100
 grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
 grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
 
-grid_coords <- expand.grid(grid_long, grid_lat)
-grid_long <- as.matrix(grid_coords)[,1]
-grid_lat <- as.matrix(grid_coords)[,2]
-colnames(grid_coords) <- c("long", "lat")
-coordinates(grid_coords) <- ~ long + lat
 
 
 grid_pred_dnn <- read.csv("D:/77/Reasearch/temp/grid_pred_dnn.csv")

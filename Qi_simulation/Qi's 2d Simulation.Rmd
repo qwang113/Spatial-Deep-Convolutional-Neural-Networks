@@ -18,8 +18,6 @@ library(FRK)
 use_condaenv("tf_gpu")
 
 
-
-
 min_max_scale <- function(x)
 {
   low <- range(x)[1]
@@ -324,7 +322,7 @@ resolution_1_conv <- input_basis_1 %>%
   layer_dense(units = 100, activation = 'relu')
   
   resolution_3_conv <- input_basis_3 %>%
-  layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') %>%
+  layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
   layer_batch_normalization() %>%
   pred_drop_layer(training = T) %>%
   layer_flatten() %>%
