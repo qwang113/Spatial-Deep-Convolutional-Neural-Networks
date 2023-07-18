@@ -7,8 +7,10 @@ library(ggplot2)
 # Observations ---------------------------------------------------------------
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = y)) +
-  scale_fill_viridis_c(limits = c(min(y)-5, max(y)+5)) +
-  labs(x = "Longitude", y = "Latitude", fill = "Y")
+  scale_fill_viridis_c(limits = c(min(y), max(y))) +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Observation Surface") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) 
 
 # Mean surface -----------------------------------------------------------------
 library(ggplot2)
@@ -34,7 +36,7 @@ int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_inla_sat.cs
 pred_sur_dnn <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, mean))) +
-  scale_fill_viridis_c(limits = c(min(y)-5, max(y)+5)) + 
+  scale_fill_viridis_c(limits = c(min(y), max(y))) + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Mean Prediction Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -42,23 +44,23 @@ pred_sur_dnn <-
 pred_sur_dk <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dk, 1, mean))) +
-  scale_fill_viridis_c(limits = c(min(y)-5, max(y)+5)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Deep Kriging Mean Prediction Surface") +
+  scale_fill_viridis_c(limits = c(min(y), max(y))) + 
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Mean Prediction Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 pred_sur_ck <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_ck, 1, mean))) +
-  scale_fill_viridis_c(limits = c(min(y)-5, max(y)+5)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Convolutional Kriging Mean Prediction Surface") +
+  scale_fill_viridis_c(limits = c(min(y), max(y))) + 
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Mean Prediction Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 pred_sur_inla <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, mean))) +
-  scale_fill_viridis_c(limits = c(min(y)-5, max(y)+5)) + 
+  scale_fill_viridis_c(limits = c(min(y), max(y))) + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Posterior Mean Prediction Surface") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
