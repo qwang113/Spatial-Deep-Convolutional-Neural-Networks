@@ -495,8 +495,8 @@ for (curr_index in 1:num_fold) {
 
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
-write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
-loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
+# write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
+# loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 
 ggplot() +
   geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +

@@ -1,9 +1,6 @@
 library(ggplot2)
 
 
-
-
-
 # Observations ---------------------------------------------------------------
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = y)) +
@@ -19,7 +16,7 @@ pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred/dnn_pred_sat.csv")
 pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred/dk_pred_sat.csv"))
 pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred/ck_pred_sat.csv"))
 pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred//inla_pred_sat.csv"))
-
+loss_mse <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
 
 crps_dnn_all <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/crps_dnn_sat.csv")$x, ncol = 1)
 crps_dk_all <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/crps_dk_sat.csv")$x, ncol = 1)
