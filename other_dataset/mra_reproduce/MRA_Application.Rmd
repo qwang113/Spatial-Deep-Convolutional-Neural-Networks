@@ -4,22 +4,18 @@ author: "Qi Wang"
 date: "2023-05-11"
 output: pdf_document
 ---
-
-```{r}
-knitr::opts_chunk$set(echo = TRUE)
+```{r include=FALSE}
 rm(list = ls())
-library(FRK)
-library(spNNGP)
+knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
-library(maps)
-library(MBA)
-library(fields)
-library(sp)
-library(ncdf4)
 library(reticulate)
-use_condaenv("tf_gpu")
-library(tensorflow)
 library(keras)
+library(tensorflow)
+library(sp)
+library(fields)
+library(FRK)
+use_condaenv("tf_gpu")
+
 
 min_max_scale <- function(x)
 {
@@ -31,25 +27,42 @@ min_max_scale <- function(x)
   
 }
 
-mra_raw <- read.csv(here::here("other_dataset/mra_reproduce/MIRSmra.csv"), header = T)
-colnames(mra_raw) <- c("long","lat","y")
-
-
-
-mra_dat <- aggregate(y ~ long + lat, data = mra_raw, FUN = mean)
-
- ggplot() +
-   geom_point(aes(x = mra_dat[,1], y = mra_dat[,2]), size = 0.1)
-
-
+mra_dat <- unique(read.csv(here::here("other_dataset/mra_reproduce/MIRSmra.csv"),header = F))
+colnames(mra_dat) <- c("long","lat","y")
 long <- mra_dat$long
 lat <- mra_dat$lat
 y <- mra_dat$y
 
 coordinates(mra_dat) <- ~ long + lat
+grid_res <- 200
+# Parameters setting
+set.seed(0)
+num_fold <- 5
+num_sample <- 100
+pred_drop <- 0.2
+train_index_all <- sample(1:num_fold, length(y), replace = T)
+loss_dnn <- rep(NA, num_fold)
+loss_dk <- rep(NA, num_fold)
+loss_ck <- rep(NA, num_fold)
+loss_inla <- rep(NA, num_fold)
 
+pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
-# Basis Function Generation
+pred_dnn_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+pred_dk_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+pred_ck_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+pred_inla_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+
+grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
+grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
+
+g_long <- expand.grid(grid_long, grid_lat)[,1]
+g_lat <- expand.grid(grid_long,grid_lat)[,2]  
+# Basis Generating
+
 
 
 gridbasis1 <- auto_basis(mainfold = plane(), data = mra_dat, nres = 1, type = "Gaussian", regular = 1)
@@ -66,14 +79,32 @@ for (i in 1:length(gridbasis1@fn)) {
   basis_1[,i] <- gridbasis1@fn[[i]](coordinates(mra_dat))
 }
 
+basis_1_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis1@fn))
+for (i in 1:length(gridbasis1@fn)) {
+  basis_1_g[,i] <- gridbasis1@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
+
+
 basis_2 <- matrix(NA, nrow = nrow(mra_dat), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
   basis_2[,i] <- gridbasis2@fn[[i]](coordinates(mra_dat))
 }
 
+basis_2_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis2@fn))
+for (i in 1:length(gridbasis2@fn)) {
+  basis_2_g[,i] <- gridbasis2@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
+
+
+
 basis_3 <- matrix(NA, nrow = nrow(mra_dat), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
   basis_3[,i] <- gridbasis3@fn[[i]](coordinates(mra_dat))
+}
+
+basis_3_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis3@fn))
+for (i in 1:length(gridbasis3@fn)) {
+  basis_3_g[,i] <- gridbasis3@fn[[i]](coordinates(cbind(g_long, g_lat)))
 }
 
 
@@ -82,53 +113,60 @@ basis_use_1_2d <- basis_1
 basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
 basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 
+basis_use_1_2d_g <- basis_1_g
+basis_use_2_2d_g <- basis_3_g[,(ncol(basis_1_g)+1):ncol(basis_2_g)]
+basis_use_3_2d_g <- basis_3_g[,(ncol(basis_2_g)+1):ncol(basis_3_g)]
+
+
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
 basis_arr_1 <- array(NA, dim = c(nrow(mra_dat), shape_row_1, shape_col_1))
+basis_arr_1_g <- array(NA, dim = c(length(g_long), shape_row_1, shape_col_1))
+
 for (i in 1:nrow(mra_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
+
+for (i in 1:length(g_long)) {
+  basis_arr_1_g[i,,] <- matrix(basis_use_1_2d_g[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
 basis_arr_2 <- array(NA, dim = c(nrow(mra_dat), shape_row_2, shape_col_2))
+basis_arr_2_g <- array(NA, dim = c(length(g_long), shape_row_2, shape_col_2))
 for (i in 1:nrow(mra_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
+for (i in 1:length(g_long)) {
+  basis_arr_2_g[i,,] <- matrix(basis_use_2_2d_g[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
+
 
 # Third resolution
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
 basis_arr_3 <- array(NA, dim = c(nrow(mra_dat), shape_row_3, shape_col_3))
-
+basis_arr_3_g <- array(NA, dim = c(length(g_long), shape_row_3, shape_col_3))
 for (i in 1:nrow(mra_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
-
-num_fold <- 5
-num_sample <- 100
-pred_drop <- 0.2
+for (i in 1:length(g_long)) {
+  basis_arr_3_g[i,,] <- matrix(basis_use_3_2d_g[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
 
 pred_drop_layer <- layer_dropout(rate=pred_drop)
 
-set.seed(0)
-train_index_all <- sample(1:num_fold, length(y), replace = T)
-loss_dnn <- rep(NA, num_fold)
-loss_dk <- rep(NA, num_fold)
-loss_ck <- rep(NA, num_fold)
-loss_inla <- rep(NA, num_fold)
 
-pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+
 ```
+
 #DNN
 
 ```{r}
-mra_dat <- aggregate(y ~ long + lat, data = mra_raw, FUN = mean)
+mra_dat <- data.frame(long = long, lat = lat, y = y)  
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
@@ -173,46 +211,43 @@ model_dnn %>% compile(
 )
   
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 200, batch_size = 1000, 
+  fit(x = x_tr, y = y_tr, epochs = 1000, batch_size = 5000, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
 model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
 loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
- pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_sample, # Maximum value of the progress bar
-                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
-                     width = 50,   # Progress bar width. Defaults to getOption("width")
-                     char = "=")   # Character used to create the bar
- 
+
 for (j in 1:num_sample) {
-  setTxtProgressBar(pb, j)
+  print(j)
   pred_dnn[-train_index,j] <- predict(model_dnn, x_te)
 }
 
 
 }
 
+# Gridwise Prediction
+
+# s_long <- (g_long- min(long))/diff(range(long))
+# s_lat <- (g_lat - min(lat))/diff(range(lat))
+# 
+# 
+# for (j in 1:num_sample) {
+#   print(j)
+#   pred_dnn_g[,j] <- predict(model_dnn, cbind(s_long, s_lat))
+# }
+
+
 ```
 
 # Deep Kriging
 
 ```{r}
-
-
 for (curr_index in 1:num_fold) {
   
   train_index <- which(train_index_all != curr_index)
-  basis_tr_1  <- basis_1[train_index,]
-  basis_te_1  <- basis_1[-train_index,]
-  
-  basis_tr_2  <- basis_2[train_index,]
-  basis_te_2  <- basis_2[-train_index,]
-  
-  basis_tr_3  <- basis_3[train_index,]
-  basis_te_3  <- basis_3[-train_index,]
-  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
-  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
+  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,], basis_1[train_index,],  basis_2[train_index,],  basis_3[train_index,])
+  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_1[-train_index,],  basis_2[-train_index,],  basis_3[-train_index,])
 
   y_tr <- y[train_index]
   y_te <- y[-train_index]
@@ -252,24 +287,30 @@ model_dk %>% compile(
   
   
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs =200, batch_size = 1000, 
+  fit(x = x_tr, y = y_tr, epochs =1000, batch_size = 5000, 
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
 model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
 loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
- pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_sample, # Maximum value of the progress bar
-                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
-                     width = 50,   # Progress bar width. Defaults to getOption("width")
-                     char = "=")   # Character used to create the bar
+
 for (j in 1:num_sample) {
-  setTxtProgressBar(pb, j)
+  print(j)
   pred_dk[-train_index,j] <- predict(model_dk, x_te)
 }
 
 }
+
+
+# for (j in 1:num_sample) {
+#   print(j)
+#   pred_dk_g[,j] <- predict(model_dk,cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)) ,basis_1_g, basis_2_g, basis_3_g))
+# }
+
+
+
+
 ```
 
 #Convolutional Kriging
@@ -322,7 +363,7 @@ resolution_1_conv <- input_basis_1 %>%
   layer_dense(units = 100, activation = 'relu')
   
   resolution_3_conv <- input_basis_3 %>%
-  layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') %>%
+  layer_conv_2d(filters = 128, kernel_size = c(2,2), activation = 'relu') %>%
   layer_batch_normalization() %>%
   pred_drop_layer(training = T) %>%
   layer_flatten() %>%
@@ -370,7 +411,7 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
-  epochs=200,
+  epochs=500,
   batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
@@ -379,18 +420,19 @@ mod_train_ck <- model_ck %>% fit(
 model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
  loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
-  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_sample, # Maximum value of the progress bar
-                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
-                     width = 50,   # Progress bar width. Defaults to getOption("width")
-                     char = "=")   # Character used to create the bar
-  
  for (j in 1:num_sample) {
-  setTxtProgressBar(pb, j)
+  print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
 }
    
 }
+
+
+# for (j in 1:num_sample) {
+#   print(j)
+#   pred_ck_g[,j] <- predict(model_ck, list(basis_arr_1_g, basis_arr_2_g, basis_arr_3_g, cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)))))
+# }
+
 
 ```
 
@@ -402,95 +444,140 @@ library(rSPDE)
 library(gridExtra)
 library(lattice)
 
+s_long <- ( g_long - min(long) )/diff(range(long)) * 10
+s_lat <- (g_lat- min(lat))/diff(range(lat)) * 10
+
 for (curr_index in 1:num_fold) {
-train_index <- which(curr_index != train_index_all)
+  train_index <- which(train_index_all != curr_index)
+  long <- min_max_scale(long) * 10
+  lat <- min_max_scale(lat) * 10
+  long_tr <- long[train_index]
+  lat_tr <- lat[train_index]
+  y_tr <- y[train_index]
+  coords <- cbind(long_tr, lat_tr)
   
-long_tr <- long[train_index]
-lat_tr <- lat[train_index]
-y_tr <- y[train_index]
-coords <- cbind(long_tr, lat_tr)
-
-non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                      offset = c(0.5, 1),
-                      cutoff = 0.3)
-
-
-
-A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
-
-
-spde <- inla.spde2.matern(mesh4, alpha=0.5)
-iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
-
-stk <- inla.stack(data=list(y=y_tr), #the response
-                  
-                  A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
-                  
-                  effects=list(c(list(Intercept=1), #the Intercept
-                                 iset),  #the spatial index
-                               #the covariates
-                               list(long = long_tr,
-                                    lat = lat_tr)
-                  ), 
-                  
-                  #this is a quick name so you can call upon easily
-                  tag='dat')
-
-
-formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
-
-model0<-inla(formula0, #the formula
-             data=inla.stack.data(stk,spde=spde),  #the data stack
-             family= 'gaussian',   #which family the data comes from
-             control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
-             control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-             verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
-
-
-
-long_te <- long[-train_index]
-lat_te <- lat[-train_index]
-y_te <- y[-train_index]
-
-
-test_coords <- cbind(long_te, lat_te)
-
-
-# Prediction
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
-
-stk.pred <- inla.stack(data=list(y=NA), 
-                       A=list(Aprediction,1), 
-                       effects=list(c(list(Intercept=1)
-                                      ,iset),
-                                    list(
-                                      long = long_te,
-                                      lat = lat_te
-                                    )
-                       ), 
-                       tag='pred')
-
-#join the prediction stack with the one for the full data
-stk.full <- inla.stack(stk, stk.pred)
-
-p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
-                 family= 'gaussian', quantiles = NULL,
-                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
-                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
-                 verbose = FALSE) 
-
-index.pred<-inla.stack.index(stk.full, "pred")$data
-
-# <- inla.posterior.sample(n = num_sample, p.res.pred)
-temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
-pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
-
+  non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
+                        offset = c(0.5, 1),
+                        cutoff = 0.3)
+  
+  
+  
+  A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
+  
+  
+  spde <- inla.spde2.matern(mesh4, alpha=0.5)
+  iset <- inla.spde.make.index(name = "spatial.field", spde$n.spde)
+  
+  stk <- inla.stack(data=list(y=y_tr), #the response
+                    
+                    A=list(A,1),  #the A matrix; the 1 is included to make the list(covariates)
+                    
+                    effects=list(c(list(Intercept=1), #the Intercept
+                                   iset),  #the spatial index
+                                 #the covariates
+                                 list(long = long_tr,
+                                      lat = lat_tr)
+                    ), 
+                    
+                    #this is a quick name so you can call upon easily
+                    tag='dat')
+  
+  
+  formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
+  
+  model0<-inla(formula0, #the formula
+               data=inla.stack.data(stk,spde=spde),  #the data stack
+               family= 'gaussian',   #which family the data comes from
+               control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
+               control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+               verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
+  
+  
+  
+  long_te <- long[-train_index]
+  lat_te <- lat[-train_index]
+  y_te <- y[-train_index]
+  
+  
+  test_coords <- cbind(long_te, lat_te)
+  
+  
+  # Prediction
+  Aprediction <- inla.spde.make.A(mesh = mesh4, loc = test_coords);
+  
+  stk.pred <- inla.stack(data=list(y=NA), 
+                         A=list(Aprediction,1), 
+                         effects=list(c(list(Intercept=1)
+                                        ,iset),
+                                      list(
+                                        long = long_te,
+                                        lat = lat_te
+                                      )
+                         ), 
+                         tag='pred')
+  
+  #join the prediction stack with the one for the full data
+  stk.full <- inla.stack(stk, stk.pred)
+  
+  p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
+                   family= 'gaussian', quantiles = NULL,
+                   control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
+                   control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+                   control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                   verbose = FALSE) 
+  
+  index.pred<-inla.stack.index(stk.full, "pred")$data
+  
+  # <- inla.posterior.sample(n = num_sample, p.res.pred)
+  temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+  pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
+  loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
 
+# 
+# 
+# # Prediction for grid
+# Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind(s_long,s_lat));
+# 
+# stk.pred <- inla.stack(data=list(y=NA), 
+#                        A=list(Aprediction,1), 
+#                        effects=list(c(list(Intercept=1)
+#                                       ,iset),
+#                                     list(
+#                                       long = s_long,
+#                                       lat = s_lat
+#                                     )
+#                        ), 
+#                        tag='pred')
+# 
+# #join the prediction stack with the one for the full data
+# stk.full <- inla.stack(stk, stk.pred)
+# 
+# p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
+#                  family= 'gaussian', quantiles = NULL,
+#                  control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
+#                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+#                  control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+#                  verbose = FALSE) 
+# 
+# index.pred<-inla.stack.index(stk.full, "pred")$data
+# 
+# # <- inla.posterior.sample(n = num_sample, p.res.pred)
+# temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+# pred_inla_g <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
+# 
+# 
+# 
+# 
+# 
+
+
+
 ```
+
+
+
 
 ```{r}
 
@@ -498,35 +585,34 @@ loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
 write.csv(as.data.frame(loss_all),here::here("other_dataset/mra_reproduce/mra_loss.csv"),row.names = FALSE)
 loss_all <- read.csv(here::here("other_dataset/mra_reproduce/mra_loss.csv"))
-loss_inla_ck <- loss_all[,c(1,4)]
 
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
-   coord_flip()
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
-   coord_flip()
 
-# write.csv(as.data.frame(pred_dnn),here::here("other_dataset/mra_reproduce/dnn_pred.csv"),row.names = FALSE)
-# write.csv(as.data.frame(pred_dk),here::here("other_dataset/mra_reproduce/dk_pred.csv"),row.names = FALSE)
-# write.csv(as.data.frame(pred_ck),here::here("other_dataset/mra_reproduce/ck_pred.csv"),row.names = FALSE)
-# write.csv(as.data.frame(pred_inla),here::here("other_dataset/mra_reproduce/inla_pred.csv"),row.names = FALSE)
+
+write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/mra_pred/dk_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck),"D:/77/Reasearch/temp/mra_pred/ck_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra.csv",row.names = FALSE)
+
+# 
+# write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_dk_g),"D:/77/Reasearch/temp/mra_pred/dk_pred_mra_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_ck_g),"D:/77/Reasearch/temp/mra_pred/ck_pred_mra_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra_g.csv",row.names = FALSE)
+
 
 
 ```
 # CRPS Calculation
 
 ```{r}
-
-
-mra_dat <- aggregate(y ~ long + lat, data = mra_raw, FUN = mean)
-
-
+mra_dat <- unique(read.csv(here::here("other_dataset/mra_reproduce/MIRSmra.csv"), header = F))
+colnames(mra_dat) <- c("long","lat","y")
 long <- mra_dat$long
 lat <- mra_dat$lat
 y <- mra_dat$y
 
-library(verification)
+
+
 calculate_dist_between <- function(x){
   return( mean(spDists(matrix(x, ncol = 1)))  )
 }
@@ -548,32 +634,32 @@ crps <- function(prediction_matrix, true_value){
   return(res)
 }
 
+pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dnn_pred_mra.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dk_pred_mra.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/ck_pred_mra.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/inla_pred_mra.csv"))
 
-pred_dnn <- as.matrix(read.csv(here::here("D:/77/Reasearch/temp/dnn_pred_mra.csv")))
-pred_dk <- as.matrix(read.csv(here::here("D:/77/Reasearch/temp/dk_pred_mra.csv")))
-pred_ck <- as.matrix(read.csv(here::here("D:/77/Reasearch/temp/ck_pred_mra.csv")))
-pred_inla <- as.matrix(read.csv(here::here("D:/77/Reasearch/temp/inla_pred_mra.csv")))
 
-library(scoringutils)
+
 crps_dnn_all <- crps(pred_dnn,y)
 crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-ggplot() +
-  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(crps_dnn_all,crps_dk_all,crps_ck_all,crps_inla_all))), aes(x = variable, y = value)) +
-   coord_flip()
-ggplot() +
-  geom_density(aes(x = crps_dnn_all, color = "DNN")) +
-  geom_density(aes(x = crps_dk_all, color = "DK")) +
-  geom_density(aes(x = crps_ck_all, color = "CK")) +
-  geom_density(aes(x = crps_inla_all, color = "INLA")) 
+write.csv(crps_dnn_all,"D:/77/Reasearch/temp/mra_pred/crps_dnn_mra.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Reasearch/temp/mra_pred/crps_dk_mra.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Reasearch/temp/mra_pred/crps_ck_mra.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Reasearch/temp/mra_pred/crps_inla_mra.csv",row.names = FALSE)
 
-print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
-print(paste("CRPS of DK is: ", mean(crps_dk_all)))
-print(paste("CRPS of CK is: ", mean(crps_ck_all)))
-print(paste("CRPS of INLA is: ", mean(crps_inla_all)))
+crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_dnn_mra.csv"))
+crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_dk_mra.csv"))
+crps_ck_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_ck_mra.csv"))
+crps_inla_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_inla_mra.csv"))
+
+
+
 ```
+
 
 # Interval Score Calculation
 
@@ -586,9 +672,9 @@ int_score <- function(l,u,true_x,alpha = 0.05){
 }
 
 all_interval_score <- function(prediction_sample, alpha = 0.05, true_x){
-  num_sample <- length(true_x)
+  num_all <- length(true_x)
  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = num_sample, # Maximum value of the progress bar
+                     max = num_all, # Maximum value of the progress bar
                      style = 3,    # Progress bar style (also available style = 1 and style = 2)
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar
@@ -609,27 +695,31 @@ int_score_dk <- all_interval_score(prediction_sample = pred_dk, true_x = y)
 int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
-ggplot() +
-  geom_boxplot(data = reshape2::melt(as.data.frame(cbind(int_score_dnn,int_score_dk,int_score_ck,int_score_inla))), aes(x = variable, y = value)) +
-   coord_flip()
 
-ggplot() +
-  geom_density(aes(x = int_score_dnn, color = "DNN")) +
-  geom_density(aes(x = int_score_dk, color = "DK")) +
-  geom_density(aes(x = int_score_ck, color = "CK")) +
-  geom_density(aes(x = int_score_inla, color = "INLA")) 
-
-
-
-int_score_dnn <- all_interval_score(prediction_sample = pred_dnn, true_x = y)
-int_score_dk <- all_interval_score(prediction_sample = pred_dk, true_x = y)
-int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
-int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
-
+write.csv(int_score_dnn,"D:/77/Reasearch/temp/mra_pred/int_dnn_mra.csv",row.names = FALSE)
+write.csv(int_score_dk,"D:/77/Reasearch/temp/mra_pred/int_dk_mra.csv",row.names = FALSE)
+write.csv(int_score_ck,"D:/77/Reasearch/temp/mra_pred/int_ck_mra.csv",row.names = FALSE)
+write.csv(int_score_inla,"D:/77/Reasearch/temp/mra_pred/int_inla_mra.csv",row.names = FALSE)
 
 
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
 print(paste("Interval Score of DK is: ", mean(int_score_dk)))
 print(paste("Interval Score of CK is: ", mean(int_score_ck )))
 print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
+
+```
+```{r}
+
+# facet_zoom() add some layers to the plot
+# Add uncertainty surface
+# Write all three datasets
+
+
+
+
+
+```
+
+
+  
 ```

@@ -212,8 +212,8 @@ for (curr_index in 1:num_fold) {
   
   basis_tr_3  <- basis_3[train_index,]
   basis_te_3  <- basis_3[-train_index,]
-  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
-  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,],basis_te_1, basis_te_2, basis_te_3)
+  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
+  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
 
   y_tr <- y[train_index]
   y_te <- y[-train_index]

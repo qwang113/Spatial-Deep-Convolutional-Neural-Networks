@@ -1,5 +1,11 @@
 library(ggplot2)
 
+load(here::here("other_dataset/satellite/AllSatelliteTemps.RData"))
+sat_dat <- na.omit(all.sat.temps[,c(1,2,4)])
+colnames(sat_dat) <- c("long","lat", "y")
+long <- sat_dat$long
+lat <- sat_dat$lat
+y <- sat_dat$y
 
 # Observations ---------------------------------------------------------------
 ggplot() +
@@ -28,6 +34,7 @@ int_score_dk <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_dk_sat.csv")$
 int_score_ck <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_ck_sat.csv")$x, ncol = 1)
 int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_inla_sat.csv")$x, ncol = 1)
 
+loss_all <- as.matrix(read.csv(here::here("other_dataset/satellite/sat_loss.csv")))
 
 # mean -------------------------------------------------------------------------------------
 pred_sur_dnn <-

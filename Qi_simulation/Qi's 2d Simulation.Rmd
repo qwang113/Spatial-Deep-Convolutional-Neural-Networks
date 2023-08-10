@@ -214,8 +214,8 @@ for (curr_index in 1:num_fold) {
   
   basis_tr_3  <- basis_3[train_index,]
   basis_te_3  <- basis_3[-train_index,]
-  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
-  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,],basis_te_1, basis_te_2, basis_te_3)
+  x_tr <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[train_index,],basis_tr_1, basis_tr_2, basis_tr_3)
+  x_te <- cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,],basis_te_1, basis_te_2, basis_te_3)
 
   y_tr <- y[train_index]
   y_te <- y[-train_index]
@@ -287,8 +287,8 @@ basis_te_1 <- array_reshape(basis_arr_1[-train_index,,], c(length(y) - length(tr
 basis_te_2 <- array_reshape(basis_arr_2[-train_index,,], c(length(y) - length(train_index), shape_row_2, shape_col_2, 1))
 basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(y) - length(train_index), shape_row_3, shape_col_3, 1))
 
-cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)) * 10)[train_index,]
-cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)) * 10)[-train_index,]
+cov_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[train_index,]
+cov_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat)))[-train_index,]
 
 # We need three convolutional input model and adding covariates.
 input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
