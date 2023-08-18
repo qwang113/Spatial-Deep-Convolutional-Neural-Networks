@@ -1,0 +1,492 @@
+---
+title: "pm Example Reproduce"
+author: "Qi Wang"
+date: "2023/4/3"
+output: pdf_document
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+library(FRK)
+library(spNNGP)
+library(ggplot2)
+library(maps)
+library(MBA)
+library(fields)
+library(sp)
+library(ncdf4)
+library(reticulate)
+library(geoR)
+use_condaenv("tf_gpu")
+library(tensorflow)
+library(keras)
+pm_dat <- read.csv(here::here("pm25_0605.csv"), header = T)
+cov_dat <- read.csv(here::here("covariate0605.csv"), header = T)
+
+pm_loc <- cbind(pm_dat$Longitude, pm_dat$Latitude)
+cov_loc <- cbind(cov_dat$long, cov_dat$lat)
+
+ggplot() +
+  geom_point(aes(x = cov_loc[,1], y = cov_loc[,2]), size = 0.5)
+
+
+obs_grid_dist <- spDists(pm_loc, cov_loc)
+
+cov_idx <- apply(obs_grid_dist, 1, which.min)
+
+pm_idxed <- cbind(pm_dat, cov_idx)
+pm_avg <- aggregate(PM25 ~ cov_idx, data = pm_dat, FUN = mean)
+
+pm_cov <- cbind(pm_avg, cov_dat[pm_avg[,1],])[,-c(1,3)]
+
+long <- pm_cov$long
+lat <- pm_cov$lat
+pm <- pm_cov$PM25
+cov_all <- cbind(long, lat,pm_cov[,4:9])
+
+min_max_scale <- function(x)
+{
+  low <- range(x)[1]
+  high <- range(x)[2]
+  
+  out <- (x - low)/(high - low)
+  return(out)
+  
+}
+
+scaled_cov <- apply(cov_all, 2, min_max_scale)
+scaled_long <- scaled_cov[,1]
+scaled_lat <- scaled_cov[,2]
+scaled_coords <- cbind(scaled_long, scaled_lat)
+
+
+# us_map <- map_data("state", region=c("alabama", "arizona", "arkansas", "california", "colorado", "connecticut",
+#                                      "delaware", "florida", "georgia", "idaho", "illinois", "indiana",
+#                                      "iowa", "kansas", "kentucky", "louisiana", "maine", "maryland",
+#                                      "massachusetts", "michigan", "minnesota", "mississippi", "missouri",
+#                                      "montana", "nebraska", "nevada", "new hampshire", "new jersey",
+#                                      "new mexico", "new york", "north carolina", "north dakota", "ohio",
+#                                      "oklahoma", "oregon", "pennsylvania", "rhode island", "south carolina",
+#                                      "south dakota", "tennessee", "texas", "utah", "vermont", "virginia",
+#                                      "washington", "west virginia", "wisconsin", "wyoming"))
+# 
+# states = c("Alabama", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+#            "Delaware", "Florida", "Georgia", "Idaho", "Illinois", "Indiana",
+#            "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
+#            "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",
+#            "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey",
+#            "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+#            "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
+#            "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
+#             "West Virginia", "Wisconsin", "Wyoming", "Washington")
+# 
+# # 
+# coords <- cbind(long, lat)
+# x.res <- 500
+# y.res <- 500
+# surf <- mba.surf(cbind(coords, pm), no.X = x.res, no.Y = y.res, h = 5, m = 2, extend = TRUE)$xyz.est
+# 
+# all_inside <- NULL
+# exp_grid <- expand.grid(surf$x, surf$y)
+# for (i in 1:length(states)) {
+#   tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),as.matrix(exp_grid))
+#   all_inside <- unique(c(all_inside, tem))
+# 
+# }
+# obs_pm <- surf$z[all_inside]
+# obs_long <-  as.matrix(exp_grid)[all_inside,1]
+# obs_lat <-  as.matrix(exp_grid)[all_inside,2]
+# p1 <-
+# ggplot() +
+#   geom_contour_filled(aes(x = obs_long, y = obs_lat, z = obs_pm))+
+#    geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red")
+# p2 <-
+# ggplot() +
+#   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
+#   geom_point(aes(x = long, y = lat, color = pm)) +
+#   scale_color_viridis_c()
+# 
+# p1
+# p2
+
+
+nychka_fun <- function(spdist, theta){
+  
+  d <- spdist/theta
+  
+  out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
+  
+  out[which(d > 1)] <- 0
+  non_0 <- which(d<=1)
+  out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
+  return(out)
+}
+
+  basis_1 <- expand.grid(seq(from = 0, to = 1, length.out = 10),seq(from = 0, to = 1, length.out = 10))  
+  basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
+  basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
+  basis_4 <- expand.grid(seq(from = 0, to = 1, length.out = 73),seq(from = 0, to = 1, length.out = 73))
+  
+  basis_dist_1 <- spDists(as.matrix(scaled_coords), as.matrix(basis_1))
+  basis_dist_2 <- spDists(as.matrix(scaled_coords), as.matrix(basis_2))
+  basis_dist_3 <- spDists(as.matrix(scaled_coords), as.matrix(basis_3))
+  basis_dist_4 <- spDists(as.matrix(scaled_coords), as.matrix(basis_4))
+  
+  theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
+  theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
+  theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
+  theta_4 <- 2.5* diff(seq(from = 0, to = 1, length.out = 73))[1]
+  
+  basis_fun_1 <- nychka_fun(basis_dist_1, theta = theta_1)
+  basis_fun_2 <- nychka_fun(basis_dist_2, theta = theta_2)
+  basis_fun_3 <- nychka_fun(basis_dist_3, theta = theta_3)
+  basis_fun_4 <- nychka_fun(basis_dist_4, theta = theta_4)
+
+  # Define deep learning function
+#   deep_learning <- function(model, x_tr, y_tr, x_te, y_te, epoch_stop)
+#   {
+#     model %>% compile(
+#     loss = "mse",
+#     optimizer = optimizer_adam(),
+#     metrics = list("mse")
+#   )
+# 
+#   model_checkpoint <- callback_model_checkpoint(
+#   filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+#   save_best_only = TRUE,
+#   monitor = "val_loss",
+#   mode = "min",
+#   verbose = 1
+# )
+#   history <- model %>%
+#   fit(x = x_tr, y = y_tr, epochs = epoch_stop, batch_size = 32, callbacks = list(model_checkpoint), validation_data = list(x_te, y_te))
+#   model %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+#   return(model)
+#   }
+  
+set.seed(0)
+train_index_all <- sample(1:10, length(pm), replace = T)
+loss_dnn <- rep(NA, 10)
+loss_dk <- rep(NA, 10)
+loss_ck <- rep(NA, 10)
+loss_krig <- rep(NA, 10)
+
+pred_dnn <- rep(NA, length(pm))
+pred_dk <- rep(NA, length(pm))
+pred_ck <- rep(NA, length(pm))
+pred_krig <- rep(NA, length(pm))
+```
+
+
+## DNN Model
+
+```{r}
+for (curr_index in 1:10) {
+train_index <- which(train_index_all != curr_index)
+  
+x_tr <- as.matrix(scaled_cov[train_index,])
+x_te <- as.matrix(scaled_cov[-train_index,])
+
+pm_tr <- pm[train_index]
+pm_te <- pm[-train_index]
+
+model_dnn <- keras_model_sequential() 
+
+model_dnn %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(scaled_cov)), kernel_initializer = "he_uniform") %>% 
+  layer_dropout(rate = 0.3) %>% 
+  layer_batch_normalization()%>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_batch_normalization()%>%
+  layer_dense(units = 1, activation = 'linear')
+
+    model_dnn %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+
+  model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+  history <- model_dnn %>%
+  fit(x = x_tr, y = pm_tr, epochs = 1000, batch_size = 32, callbacks = list(model_checkpoint), validation_data = list(x_te, pm_te))
+  model_dnn %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  
+
+loss_dnn[curr_index] <- evaluate(model_dnn, x_te, pm_te)[2]
+pred_dnn[-train_index] <- predict(model_dnn, x_te)
+
+}
+
+
+```
+
+## Deep Kriging Model
+
+```{r}
+for (curr_index in 1:10) {
+  train_index <- which(train_index_all != curr_index)
+  
+  # basis_tr <- basis_arr[train_index,,]
+# basis_te <- basis_arr[-train_index,,]
+# 
+  num_0 <- which(colSums(as.matrix(cbind(scaled_cov[train_index,], basis_fun_1[train_index,], basis_fun_2[train_index,]
+                    , basis_fun_3[train_index,], basis_fun_4[train_index,])))==0)
+  
+  
+x_tr <- as.matrix(cbind(scaled_cov[train_index,], basis_fun_1[train_index,], basis_fun_2[train_index,]
+                    , basis_fun_3[train_index,], basis_fun_4[train_index,]))[,-num_0]
+
+
+x_te <- as.matrix(cbind(scaled_cov[-train_index,], basis_fun_1[-train_index,], basis_fun_2[-train_index,]
+                    , basis_fun_3[-train_index,], basis_fun_4[-train_index,]))[,-num_0]
+# 
+# x_tr <- array_reshape (basis_tr, c(nrow(basis_tr),  shape_row*shape_col))  # So we want to reshape each observation from a picture to a vector
+# x_te <- array_reshape(basis_te, c(nrow(basis_te),  shape_row*shape_col))  # Same as prervious step
+# basis_tr  <- basis_3[train_index,]
+# basis_te  <- basis_3[-train_index,]
+# x_tr <- scale(as.matrix(cbind(cov_tr, basis_tr)))
+# x_te <- scale(as.matrix(cbind(cov_te, basis_te)))
+
+pm_tr <- pm[train_index]
+pm_te <- pm[-train_index]
+
+# Compile the model
+drop = 0.1
+model_dk <- keras_model_sequential() 
+
+model_dk %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c( ncol(as.matrix(cbind(scaled_cov[train_index,], basis_fun_1[train_index,], basis_fun_2[train_index,]
+                    , basis_fun_3[train_index,], basis_fun_4[train_index,]))) - length(num_0) ), kernel_initializer = "he_uniform") %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  #layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  #layer_dropout(drop) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'linear')
+
+
+    model_dk %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+
+  model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+  history <- model_dk %>%
+  fit(x = x_tr, y = pm_tr, epochs = 200, batch_size = 32, callbacks = list(model_checkpoint), validation_data = list(x_te, pm_te))
+  model_dk %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  
+
+loss_dk[curr_index] <- evaluate(model_dk, x_te, pm_te)[2]
+pred_dk[-train_index] <- predict(model_dk, x_te)
+}
+
+
+```
+## Convolutional Kriging Model
+
+
+```{r}
+# First resolution
+#rearrange_basis_order_1 <- order( basis_1[,1], basis_1[,2] )
+shape_col_1 <- shape_row_1 <- 10
+basis_arr_1 <- array(NA, dim = c(length(pm), shape_row_1, shape_col_1))
+for (i in 1:length(pm)) {
+  basis_arr_1[i,,] <- matrix(basis_fun_1[i,], nrow = shape_row_1, ncol = shape_col_1)
+}
+
+test_idx <- 1
+ggplot() +
+geom_raster(aes(x = basis_1[,1], y = basis_1[,2], fill = as.vector(basis_arr_1[test_idx, , ]))) +
+  geom_point(aes(x = scaled_coords[test_idx,1], y = scaled_coords[test_idx,2]))
+
+# Second resolution
+shape_col_2 <- shape_row_2 <- 19
+basis_arr_2 <- array(NA, dim = c(length(pm), shape_row_2, shape_col_2))
+for (i in 1:length(pm)) {
+  basis_arr_2[i,,] <- matrix(basis_fun_2[i,], nrow = shape_row_2, ncol = shape_col_2)
+}
+
+# Third resolution
+shape_col_3 <- shape_row_3 <- 37
+basis_arr_3 <- array(NA, dim = c(length(pm), shape_row_3, shape_col_3))
+for (i in 1:length(pm)) {
+  basis_arr_3[i,,] <- matrix(basis_fun_3[i,], nrow = shape_row_3, ncol = shape_col_3)
+}
+
+# Fourth resolution
+shape_col_4 <- shape_row_4 <- 73
+basis_arr_4 <- array(NA, dim = c(length(pm), shape_row_4, shape_col_4))
+for (i in 1:length(pm)) {
+  basis_arr_4[i,,] <- matrix(basis_fun_4[i,], nrow = shape_row_4, ncol = shape_col_4)
+}
+```
+
+
+```{r}
+for (curr_index in 1:10) {
+
+train_index <- which(train_index_all != curr_index)
+
+basis_tr_1 <- array_reshape(basis_arr_1[train_index,,], c(length(train_index), shape_row_1, shape_col_1, 1))
+basis_tr_2 <- array_reshape(basis_arr_2[train_index,,], c(length(train_index), shape_row_2, shape_col_2, 1))
+basis_tr_3 <- array_reshape(basis_arr_3[train_index,,], c(length(train_index), shape_row_3, shape_col_3, 1))
+basis_tr_4 <- array_reshape(basis_arr_4[train_index,,], c(length(train_index), shape_row_4, shape_col_4, 1))
+
+basis_te_1 <- array_reshape(basis_arr_1[-train_index,,], c(length(pm) - length(train_index), shape_row_1, shape_col_1, 1))
+basis_te_2 <- array_reshape(basis_arr_2[-train_index,,], c(length(pm) - length(train_index), shape_row_2, shape_col_2, 1))
+basis_te_3 <- array_reshape(basis_arr_3[-train_index,,], c(length(pm) - length(train_index), shape_row_3, shape_col_3, 1))
+basis_te_4 <- array_reshape(basis_arr_4[-train_index,,], c(length(pm) - length(train_index), shape_row_4, shape_col_4, 1))
+
+cov_tr <- scaled_cov[train_index,]
+cov_te <- scaled_cov[-train_index,]
+
+drop = 0.1
+# We need three convolutional input model and adding covariates.
+input_basis_1 <- layer_input(shape = c(shape_row_1, shape_col_1, 1))
+input_basis_2 <- layer_input(shape = c(shape_row_2, shape_col_2, 1))
+input_basis_3 <- layer_input(shape = c(shape_row_3, shape_col_3, 1))
+input_basis_4 <- layer_input(shape = c(shape_row_4, shape_col_4, 1))
+input_cov <- layer_input(shape = ncol(cov_tr))
+
+
+resolution_1_conv <- input_basis_1 %>%
+  layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+  
+ # layer_max_pooling_2d(pool_size = c(2,2)) %>%
+  layer_flatten()
+
+  resolution_2_conv <- input_basis_2 %>%
+  layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+ # layer_max_pooling_2d(pool_size = c(2,2)) %>%
+  layer_flatten()
+  
+  resolution_3_conv <- input_basis_3 %>%
+  layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+ # layer_max_pooling_2d(pool_size = c(3,3)) %>%
+  layer_flatten() 
+  
+  resolution_4_conv <- input_basis_4 %>%
+  layer_conv_2d(filters = 100, kernel_size = c(2,2), activation = 'relu') %>%
+ # layer_max_pooling_2d(pool_size = c(4,4)) %>%
+  layer_flatten() 
+  
+  cov_model <- input_cov 
+
+all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, resolution_4_conv, cov_model))
+# all_model <- layer_concatenate(list(resolution_1_conv, resolution_2_conv, resolution_3_conv, cov_model))
+
+
+output_layer <- all_model %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'linear')
+
+model_ck <- keras_model(inputs = list(input_basis_1, input_basis_2, input_basis_3,input_basis_4, input_cov), outputs = output_layer)
+
+model_ck <- 
+model_ck %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.01),
+  loss = 'mse',
+  metrics = c('mse')
+)
+ model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+
+mod_train_ck <- model_ck %>% fit(
+  x = list(basis_tr_1, basis_tr_2, basis_tr_3,basis_tr_4, cov_tr),
+  y = pm[train_index],
+  epochs=1000,
+  batch_size=16,
+  validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te), pm[-train_index]),
+  callbacks = model_checkpoint
+)
+
+model_ck %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+
+ loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te), pm[-train_index])[2]
+ pred_ck[-train_index] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,basis_te_4,cov_te))
+ 
+}
+```
+
+
+## Kriging Model
+
+
+```{r}
+pair_dist_2d <- spDists(scaled_coords)
+for (curr_index in 1:10) {
+  
+train_index <- which(train_index_all != curr_index)
+long_tr <- scaled_long[train_index]
+lat_tr <- scaled_lat[train_index]
+pm_tr <- pm[train_index]
+pm_te <- pm[-train_index]
+long_te <- scaled_long[-train_index]
+lat_te <- scaled_long[-train_index]
+cov_tr <- scaled_cov[train_index,]
+cov_te <- scaled_cov[-train_index,]
+
+curr_res <- likfit(coords = cbind(long_tr, lat_tr), data = pm_tr, ini.cov.pars = c(1,1), fix.kappa = FALSE, nugget = 0, fix.nugget = FALSE, trend = pm_tr ~ cov_tr[,1] + cov_tr[,2] + cov_tr[,3] + cov_tr[,4] + 
+                     cov_tr[,5] + cov_tr[,6] + cov_tr[,7] + cov_tr[,8] )
+ 
+  curr_beta <- matrix(curr_res$beta, ncol = 1)
+  curr_sig <- curr_res$sigmasq
+  curr_phi <- curr_res$phi
+  curr_nu <- curr_res$kappa
+  cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
+  
+  # Classical Kriging
+  exp_sig_11 <- cov_mat[train_index, train_index]
+  exp_sig_12 <- cov_mat[train_index, -train_index]
+  exp_sig_21 <- t(exp_sig_12)
+  exp_sig_22 <- cov_mat[-train_index, -train_index]
+  pred_krig[-train_index] <- cbind(1,cov_te) %*% curr_beta  + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(pm_tr - cbind(1,cov_tr) %*% curr_beta), ncol = 1 )
+  loss_krig[curr_index] <- mean((pm_te - pred_krig[-train_index])^2)
+  
+
+}
+
+```
+
+```{r}
+loss_all <- as.data.frame(cbind(loss_krig,loss_dnn,loss_dk, loss_ck))
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
+   coord_flip()
+write.csv(as.data.frame(loss_all),here::here("chen_pm/pm_small/loss_Nychka.csv"),row.names = FALSE)
+```
+
+
+```{r}
+loss_all <- read.csv(here::here("chen_pm/pm_small/loss_Nychka.csv"))
+ggplot() +
+  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
+   coord_flip()
+```
+
+
+
+

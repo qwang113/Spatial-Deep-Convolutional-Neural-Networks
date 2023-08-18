@@ -47,7 +47,7 @@ for (i in 2:length(all_states)) {
   
 }
 
-write.csv(out, file = "us_soc1.csv")
+write.csv(out, file = here::here("us_soc/soc.csv"))
 
 
 

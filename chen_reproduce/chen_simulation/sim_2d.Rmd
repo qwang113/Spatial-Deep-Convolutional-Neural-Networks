@@ -1,0 +1,337 @@
+---
+title: "Chen Simulation 2d"
+author: "Qi"
+date: '2023-04-15'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reticulate)
+library(keras)
+library(tensorflow)
+library(sp)
+library(fields)
+library(geoR)
+use_condaenv("tf_gpu")
+nychka_fun <- function(spdist, theta){
+  
+  d <- spdist/theta
+  
+  out <- matrix(NA, nrow = nrow(spdist), ncol = ncol(spdist))
+  
+  out[which(d > 1)] <- 0
+  non_0 <- which(d<=1)
+  out[non_0] <- (1-d[non_0])^6 * (35*d[non_0]^2 + 18*d[non_0] + 3)/3
+  return(out)
+}
+
+# Create basis function for DK
+  basis_1 <- expand.grid(seq(from = 0, to = 1, length.out = 10),seq(from = 0, to = 1, length.out = 10))  
+  basis_2 <- expand.grid(seq(from = 0, to = 1, length.out = 19),seq(from = 0, to = 1, length.out = 19))
+  basis_3 <- expand.grid(seq(from = 0, to = 1, length.out = 37),seq(from = 0, to = 1, length.out = 37))
+```
+In this file, we simulate the data and evaluate the performance of the 2-D non-stationary data. The data follows a process like follows:
+$$Y(s) = sin\{30(\bar{s}-0.9)^4\}cos\{ 2(\bar{s}-0.9)\} + (\bar{s}-0.9)/2$$
+
+where $s = (s_x, s_y)^T \in R^2$ and $\bar{s}= \frac{s_x+s_y}{2}$. And the range of the coordinates are $[0,1]$ and there are 900 samples from the grid 30 by 30 in surface $[0,1]^2$. And here a three level multi-resolution model is used to generate the basis function, the basis are generated in the grid of 10 by 10, 19 by 19 and 37 by 37.
+```{r}
+sim_size = 30
+sim_coords <- expand.grid(seq(0,1,length.out = sim_size),seq(0,1,length.out = sim_size))
+# If try random generate observations, use following code:
+# sim_coords[,1] <- runif(sim_size^2)
+# sim_coords[,2] <- runif(sim_size^2)
+sim_sbar <- (sim_coords[,1] + sim_coords[,2])/2
+
+
+sim_y <- sin(30*(sim_sbar-0.9)^4) * cos(2*(sim_sbar-0.9)) + (sim_sbar-0.9)/2
+
+ggplot() +
+  geom_tile(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
+  # geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = sim_y)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude")
+
+  basis_dist_1 <- spDists(as.matrix(sim_coords), as.matrix(basis_1))
+  basis_dist_2 <- spDists(as.matrix(sim_coords), as.matrix(basis_2))
+  basis_dist_3 <- spDists(as.matrix(sim_coords), as.matrix(basis_3))
+  
+  theta_1 <- 2.5* diff(seq(from = 0, to = 1, length.out = 10))[1]
+  theta_2 <- 2.5* diff(seq(from = 0, to = 1, length.out = 19))[1]
+  theta_3 <- 2.5* diff(seq(from = 0, to = 1, length.out = 37))[1]
+  
+  basis_fun_1 <- nychka_fun(basis_dist_1, theta = theta_1)
+  basis_fun_2 <- nychka_fun(basis_dist_2, theta = theta_2)
+  basis_fun_3 <- nychka_fun(basis_dist_3, theta = theta_3)
+  
+# Define deep learning function
+  deep_learning <- function(model, x_tr, y_tr, x_te, y_te, epoch_stop)
+  {
+    model %>% compile(
+    loss = "mse",
+    optimizer = optimizer_adam(),
+    metrics = list("mse")
+  )
+
+  model_checkpoint <- callback_model_checkpoint(
+  filepath = "C:/Users/10616/Desktop/temp/best_weights.h5",
+  save_best_only = TRUE,
+  monitor = "val_loss",
+  mode = "min",
+  verbose = 1
+)
+  history <- model %>%
+  fit(x = x_tr, y = y_tr, epochs = epoch_stop, batch_size = 64, callbacks = list(model_checkpoint), validation_data = list(x_te, y_te))
+  model %>% load_model_weights_hdf5("C:/Users/10616/Desktop/temp/best_weights.h5")
+  return(model)
+  }
+```
+
+
+By applying the likfit function, we can get the MLE of the estimation of the Matern kernel parameters, and the MLE is based on each training set since we are using MLE from the each training set to approximate the covariance matrix.
+
+```{r}
+pair_dist_2d <- spDists( as.matrix(sim_coords) )
+set.seed(0)
+train_all_index <- sample(1:10, sim_size^2, replace = TRUE)
+krig_mean_all <- rep(NA, sim_size^2)
+dkrig_mean_all <- rep(NA, sim_size^2)
+ckrig_mean_all <- rep(NA, sim_size^2)
+nn_mean_all <- rep(NA, sim_size^2)
+mse_vec_krig <- rep(NA, 10)
+mse_vec_nn <- rep(NA, 10)
+mse_vec_dkrig <- rep(NA, 10)
+mse_vec_ckrig <- rep(NA,10)
+```
+
+
+```{r}
+for (curr_index in 1:10) {
+  
+  print(paste("Now doing index ", curr_index))
+  
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  # Change the population
+  curr_res <- likfit(coords = train_coords, data = train_y, trend = train_y ~ train_coords[,1] + train_coords[,2],ini.cov.pars = c(1,0.1), fix.kappa = FALSE, nugget = 0, fix.nugget = TRUE)
+  
+  curr_beta <- curr_res$beta
+  curr_sig <- curr_res$sigmasq
+  curr_phi <- curr_res$phi
+  curr_nu <- curr_res$kappa
+
+  cov_mat <-  curr_sig * matern(pair_dist_2d, kappa = curr_nu, phi = curr_phi)
+
+  # Classical Kriging
+  exp_sig_11 <- cov_mat[train_index, train_index]
+  exp_sig_12 <- cov_mat[train_index, -train_index]
+  exp_sig_21 <- t(exp_sig_12)
+  exp_sig_22 <- cov_mat[-train_index, -train_index]
+  krig_mean_all[-train_index] <- as.matrix(cbind(1,test_coords))%*%matrix(curr_beta, ncol = 1) + exp_sig_21 %*% solve(exp_sig_11) %*% matrix( as.numeric(train_y - as.matrix(cbind(1,train_coords))%*%matrix(curr_beta, ncol = 1)), ncol = 1 )
+  
+  mse_vec_krig[curr_index] <- mean((sim_y[-train_index] -
+                                      krig_mean_all[-train_index])^2)
+}
+```
+
+
+```{r}
+  model_dnn <- keras_model_sequential()
+  model_dnn %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(sim_coords)), kernel_initializer = 'he_uniform') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 1, activation = 'linear')
+
+for (curr_index in 1:10) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+# dnn_mean_all 
+ 
+  x_tr <- array_reshape( as.matrix(train_coords), c(length(train_y), 2))
+  x_te <- array_reshape( as.matrix(test_coords), c(length(test_y), 2)) 
+
+  y_tr <- train_y
+  y_te <- test_y
+  # mse_epoch <- rep(NA, 200)
+  # epoch_pred <- matrix(NA, nrow = 200, ncol = length(test_y))
+  
+  curr_model <- deep_learning(model_dnn, x_tr, y_tr, x_te, y_te, epoch_stop = 200)
+  
+  nn_mean_all[-train_index] <- predict(curr_model, x_te)
+  mse_vec_nn[curr_index] <- evaluate(curr_model, x_te, y_te)[2]
+}
+
+
+```
+
+
+```{r}
+  
+model_dk <- keras_model_sequential()
+model_dk %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(cbind(train_coords, basis_fun_1[train_index,],
+                basis_fun_2[train_index,],basis_fun_3[train_index,]))), kernel_initializer = 'he_uniform') %>% 
+  layer_dense(units = 100, activation = 'relu') %>% 
+  
+  layer_dense(units = 100, activation = 'relu') %>%
+  
+  layer_dense(units = 1, activation = 'linear')
+
+for (curr_index in 1:10) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  x_tr <- cbind(train_coords, basis_fun_1[train_index,],
+                basis_fun_2[train_index,],basis_fun_3[train_index,])
+  
+  x_te <- cbind(test_coords, basis_fun_1[-train_index,],
+                basis_fun_2[-train_index,],basis_fun_3[-train_index,]) 
+  
+  
+  x_tr <- array_reshape( as.matrix(x_tr), c(length(train_y), ncol(x_tr)))
+  x_te <- array_reshape( as.matrix(x_te), c(length(test_y), ncol(x_tr))) 
+  
+  
+curr_model <- deep_learning(model_dk, x_tr, train_y, x_te, test_y, epoch_stop = 200)
+
+
+  
+  dkrig_mean_all[-train_index] <- predict(curr_model, x_te)
+  mse_vec_dkrig[curr_index] <- evaluate(curr_model, x_te, test_y)[2]
+  
+}
+```
+
+
+
+
+
+```{r}
+  input_shape <- c(37, 37, 1)
+
+
+  model_ck <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
+  #layer_conv_2d(filters = 32, kernel_size = c(2,2), activation = 'relu') %>% 
+  #layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_flatten() %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 100, activation = 'relu') %>% 
+
+  layer_dense(units = 1, activation = 'linear')
+
+
+model_ck %>% compile(
+  loss = "mse",
+  optimizer = optimizer_adam(),
+  metrics = list("mse")
+)
+
+
+
+
+for (curr_index in 1:10) {
+  train_index <- which(train_all_index != curr_index)
+  train_coords <- sim_coords[train_index,]
+  train_y <- sim_y[train_index]
+  test_coords <- sim_coords[-train_index,]
+  test_y <- sim_y[-train_index]
+  
+  basis_tr <- basis_fun_3[train_index,]
+  basis_te <- basis_fun_3[-train_index,]
+  
+  x_tr <- array_reshape(basis_tr, c(nrow(basis_tr), 37, 37, 1))
+  x_te <- array_reshape(basis_te, c(nrow(basis_te), 37, 37, 1))
+
+ curr_model <- deep_learning(model_ck, x_tr, train_y, x_te, test_y, epoch_stop = 200)
+ ckrig_mean_all[-train_index] <- predict(model_ck, x_te)
+ mse_vec_ckrig[curr_index] <- evaluate(model_ck, x_te, test_y)[2]
+  
+}  
+  
+```
+
+```{r}
+p_krig <-
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = krig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude", color = "") + 
+  ggtitle("Kriging") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+  
+p_dnn <- 
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = nn_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude") + 
+  ggtitle("DNN") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+p_dk <- 
+  ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = dkrig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude") + 
+  ggtitle("Deep Kriging") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_ck <- 
+    ggplot() +
+  geom_raster(aes(x = sim_coords[,1], y = sim_coords[,2], fill = ckrig_mean_all)) +
+  scale_fill_viridis_c(name = "") + 
+  labs(x = "Longitude",  y = "Latitude") + 
+  ggtitle("Convolutional Kriging") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r}
+sqrt(mean((krig_mean_all - sim_y)^2))
+sqrt(mean((nn_mean_all - sim_y)^2))
+sqrt(mean((dkrig_mean_all - sim_y)^2))
+sqrt(mean((ckrig_mean_all - sim_y)^2))
+cowplot::plot_grid(p_krig, p_dnn, p_dk, p_ck)
+
+mse_mat <- as.data.frame(cbind(mse_vec_krig, mse_vec_nn, mse_vec_dkrig, mse_vec_ckrig))
+pred_dat <- as.data.frame(cbind(krig_mean_all, nn_mean_all,dkrig_mean_all, ckrig_mean_all))
+write.csv(mse_mat, here::here("chen_simulation/mse_all_10_cv_2d.csv"), row.names = FALSE)
+write.csv(pred_dat, here::here("chen_simulation/prediction_2d.csv"), row.names = FALSE)
+mse_mat <- read.csv(here::here("chen_simulation/mse_all_10_cv_2d.csv"))
+mse_mean <- apply(mse_mat, 2, mean)
+```
+
+
+```{r}
+ggplot() +
+  geom_boxplot(data = reshape2::melt(mse_mat), aes(x = variable, y = value)) +
+   coord_flip()
+
+
+ggplot() +
+  geom_boxplot(data = reshape2::melt(mse_mat[,-1]), aes(x = variable, y = value)) +
+   coord_flip()
+```
+
+
+

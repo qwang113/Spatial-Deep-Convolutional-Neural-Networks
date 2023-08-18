@@ -89,7 +89,7 @@ end
 
 
 ### converts list of predictions from MRA into data frame
-using DataFrames
+include("DataFrames.jl")
 function dfpred(predlocs,preds,orderlist)
   plocs=zeros(0,size(predlocs[1],2)); postmean=zeros(0); postsd=zeros(0); ordervec=zeros(0);
   for ind=firstdefined(preds):length(preds)
