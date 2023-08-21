@@ -16,7 +16,7 @@ library(sp)
 library(fields)
 library(FRK)
 use_condaenv("tf_gpu")
-
+set.seed(0)
 
 min_max_scale <- function(x)
 {
@@ -491,6 +491,8 @@ for (curr_index in 1:num_fold) {
 loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
 
 write.csv(as.data.frame(loss_all),here::here("us_soc/soc_loss.csv"),row.names = FALSE)
+
+
 loss_all <- read.csv(here::here("us_soc/soc_loss.csv"))
 loss_inla_ck <- loss_all[,c(1,4)]
 
@@ -549,10 +551,10 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_soc.csv",row.names = FALSE)
-write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_soc.csv",row.names = FALSE)
-write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_soc.csv",row.names = FALSE)
-write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_soc.csv",row.names = FALSE)
+# write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_soc.csv",row.names = FALSE)
+# write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_soc.csv",row.names = FALSE)
+# write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_soc.csv",row.names = FALSE)
+# write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_soc.csv",row.names = FALSE)
 
 crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dnn_soc.csv"))
 crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dk_soc.csv"))
@@ -602,10 +604,10 @@ int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
 
-write.csv(int_score_dnn,"D:/77/Reasearch/temp/int_dnn_soc.csv",row.names = FALSE)
-write.csv(int_score_dk,"D:/77/Reasearch/temp/int_dk_soc.csv",row.names = FALSE)
-write.csv(int_score_ck,"D:/77/Reasearch/temp/int_ck_soc.csv",row.names = FALSE)
-write.csv(int_score_inla,"D:/77/Reasearch/temp/int_inla_soc.csv",row.names = FALSE)
+# write.csv(int_score_dnn,"D:/77/Reasearch/temp/int_dnn_soc.csv",row.names = FALSE)
+# write.csv(int_score_dk,"D:/77/Reasearch/temp/int_dk_soc.csv",row.names = FALSE)
+# write.csv(int_score_ck,"D:/77/Reasearch/temp/int_ck_soc.csv",row.names = FALSE)
+# write.csv(int_score_inla,"D:/77/Reasearch/temp/int_inla_soc.csv",row.names = FALSE)
 
 
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
