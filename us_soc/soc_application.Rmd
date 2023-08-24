@@ -28,7 +28,7 @@ min_max_scale <- function(x)
   
 }
 
-us_soc <- read.csv(here::here("us_soc/soc.csv"))
+us_soc <- na.omit(read.csv(here::here("us_soc/soc_2.csv")))
 long <- us_soc$long
 lat <- us_soc$lat
 y <- us_soc$soc
@@ -169,7 +169,7 @@ model_dnn %>% compile(
 )
   
 mod_train_dnn <- model_dnn %>%
-  fit(x = x_tr, y = y_tr, epochs = 1000, batch_size = 200, 
+  fit(x = x_tr, y = y_tr, epochs = 1000, batch_size = 1000, 
       validation_data = list(x_te, y_te) , callbacks = list(model_checkpoint))
 
 model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")

@@ -21,7 +21,8 @@ socSite <- fetchRaCA(state = c("AL"))$pedons@site%>%
   dplyr::select(rcapid, elevation=elev_field, long=x, lat=y, landuse) ## location data
 
 out <- soc_all %>% left_join(socSite, by="rcapid") %>%
-  filter(sample_top==0) %>% filter(soc_measured == "measured") ## just taking the top layer of soil
+  filter(sample_top==0)
+# %>% filter(soc_measured == "measured") ## just taking the top layer of soil
 
 out <- cbind(out, "AL")
 colnames(out)[length(colnames(out))] <- "State"
@@ -37,7 +38,8 @@ for (i in 2:length(all_states)) {
     dplyr::select(rcapid, elevation=elev_field, long=x, lat=y, landuse) ## location data
   
   out_temp <- soc_temp %>% left_join(socSite_temp, by="rcapid") %>%
-    filter(sample_top==0) %>% filter(soc_measured == "measured") ## just taking the top layer of soil
+    filter(sample_top==0) 
+  # %>% filter(soc_measured == "measured") ## just taking the top layer of soil
   
   
   out_temp <- cbind(out_temp, all_states[i])
@@ -47,8 +49,4 @@ for (i in 2:length(all_states)) {
   
 }
 
-write.csv(out, file = here::here("us_soc/soc.csv"))
-
-
-
-
+write.csv(out, file = here::here("us_soc/soc_2.csv"))
