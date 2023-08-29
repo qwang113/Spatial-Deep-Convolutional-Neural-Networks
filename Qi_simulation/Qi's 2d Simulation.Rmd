@@ -31,10 +31,10 @@ min_max_scale <- function(x)
 sim_size = 300
 
 egg_fun <- function(x,y){
-  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+  out <- -(500*y + 47)*sin(sqrt(abs(500*x/2 + 500*y + 47))) - 500*x*sin(sqrt(abs(500*x-(500*y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -50,18 +50,16 @@ num_fold <- 5
 num_sample <- 100
 pred_drop <- 0.2
 train_index_all <- sample(1:num_fold, length(y), replace = T)
-loss_dnn <- rep(NA, num_fold)
-loss_dk <- rep(NA, num_fold)
-loss_ck <- rep(NA, num_fold)
-loss_inla <- rep(NA, num_fold)
+
 
 pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+```
 
 
-
+```{r include=FALSE}
 # Basis Generating
 
 gridbasis1 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 1, type = "Gaussian", regular = 1)
@@ -183,7 +181,6 @@ mod_train_dnn <- model_dnn %>%
 
 model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
-loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 
 for (j in 1:num_sample) {
   print(j)
@@ -261,7 +258,6 @@ mod_train_dk <- model_dk %>%
 
 model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
-loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 
 for (j in 1:num_sample) {
   print(j)
@@ -378,7 +374,6 @@ mod_train_ck <- model_ck %>% fit(
 
 model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
- loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
  for (j in 1:num_sample) {
   print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
@@ -398,24 +393,39 @@ library(INLA)
 library(rSPDE)
 library(gridExtra)
 library(lattice)
+library(geoR)
 
 long <- expand.grid(long_grid, lat_grid)[,1]
 lat <- expand.grid(long_grid, lat_grid)[,2]
 
+
+long_s <- scale(long)
+lat_s <- scale(lat)
+
+# ml_idx <- which(
+#   
+#   (long_s >= -0.2 & long_s <= 0.2) &
+#     (lat_s >= -0.2 & lat_s <= 0.2)
+#   
+#   
+# )
+
+
+ml_idx <- sample(1:length(long), 2000)
+ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
+
+
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
-  long <- min_max_scale(long) * 10
-  lat <- min_max_scale(lat) * 10
   long_tr <- long[train_index]
   lat_tr <- lat[train_index]
   y_tr <- y[train_index]
   coords <- cbind(long_tr, lat_tr)
   
-  non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                        offset = c(0.5, 1),
-                        cutoff = 0.3)
+  print("Building mesh . . .")
   
+  non_convex_bdry <- inla.nonconvex.hull(coords, -0.3, resolution = c(100, 100))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(ml_res$phi*0.1, ml_res$phi*1.1))
   
   
   A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
@@ -440,7 +450,9 @@ for (curr_index in 1:num_fold) {
   
   
   formula0<- y ~ -1 + long + lat + f(spatial.field, model=spde) 
-  
+ 
+  print("Fitting model . . .")
+   
   model0<-inla(formula0, #the formula
                data=inla.stack.data(stk,spde=spde),  #the data stack
                family= 'gaussian',   #which family the data comes from
@@ -474,7 +486,7 @@ for (curr_index in 1:num_fold) {
   
   #join the prediction stack with the one for the full data
   stk.full <- inla.stack(stk, stk.pred)
-  
+  print("Making posterior predictions . . .") 
   p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                    family= 'gaussian', quantiles = NULL,
                    control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
@@ -487,7 +499,6 @@ for (curr_index in 1:num_fold) {
   # <- inla.posterior.sample(n = num_sample, p.res.pred)
   temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
   pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-  loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
 
 
@@ -498,31 +509,27 @@ for (curr_index in 1:num_fold) {
 
 
 ```{r}
-
-loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
-
-write.csv(as.data.frame(loss_all),here::here("Qi_simulation/eh_loss.csv"),row.names = FALSE)
-loss_all <- read.csv(here::here("Qi_simulation/eh_loss.csv"))
-loss_inla_ck <- loss_all[,c(1,4)]
-
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
-   coord_flip()
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
-   coord_flip()
-
 write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/dnn_pred_eh.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/dk_pred_eh.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_ck),"D:/77/Reasearch/temp/ck_pred_eh.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_eh.csv",row.names = FALSE)
+```
 
+# Prediction MSE
+
+```{r}
+
+dnn_mse <- mean((apply(pred_dnn, 1, mean) - y)^2)
+dk_mse <- mean((apply(pred_dk, 1, mean) - y)^2)
+ck_mse <- mean((apply(pred_ck, 1, mean) - y)^2)
+inla_mse <- mean((apply(pred_inla, 1, mean) - y)^2)
 
 ```
+
 # CRPS Calculation
 
 ```{r}
-long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -563,10 +570,10 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-# write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_eh.csv",row.names = FALSE)
-# write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_eh.csv",row.names = FALSE)
-# write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_eh.csv",row.names = FALSE)
-# write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_eh.csv",row.names = FALSE)
+write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_eh.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_eh.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_eh.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_eh.csv",row.names = FALSE)
 
 crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dnn_eh.csv"))
 crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dk_eh.csv"))

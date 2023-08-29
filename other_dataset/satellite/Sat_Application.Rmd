@@ -20,6 +20,7 @@ library(reticulate)
 use_condaenv("tf_gpu")
 library(tensorflow)
 library(keras)
+library(geoR)
 
 min_max_scale <- function(x)
 {
@@ -44,9 +45,27 @@ y <- sat_dat$y
  # y <- y[use_index]
  # sat_dat <- sat_dat[use_index,]
  coordinates(sat_dat) <- ~ long + lat
+ 
+ 
+num_fold <- 5
+num_sample <- 100
+pred_drop <- 0.2
 
 
 
+set.seed(0)
+train_index_all <- sample(1:num_fold, length(y), replace = T)
+
+
+pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+
+```
+
+
+```{r}
 # Basis Function Generation
 
 
@@ -78,7 +97,7 @@ for (i in 1:length(gridbasis3@fn)) {
 
 
 # Redefine three layers of basis images
-basis_use_1_2d <- basis_1
+basis_use_1_2d <- basis_3[,1:ncol(basis_1)]
 
 basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
 
@@ -112,23 +131,7 @@ for (i in 1:nrow(sat_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
 
-num_fold <- 5
-num_sample <- 100
-pred_drop <- 0.2
-
 pred_drop_layer <- layer_dropout(rate=pred_drop)
-
-set.seed(0)
-train_index_all <- sample(1:num_fold, length(y), replace = T)
-loss_dnn <- rep(NA, num_fold)
-loss_dk <- rep(NA, num_fold)
-loss_ck <- rep(NA, num_fold)
-loss_inla <- rep(NA, num_fold)
-
-pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
 ```
 #DNN
@@ -183,7 +186,6 @@ mod_train_dnn <- model_dnn %>%
 
 model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
-loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 
 for (j in 1:num_sample) {
   print(j)
@@ -259,7 +261,6 @@ mod_train_dk <- model_dk %>%
 
 model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
-loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 
 for (j in 1:num_sample) {
   print(j)
@@ -376,7 +377,6 @@ mod_train_ck <- model_ck %>% fit(
 
 model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
- loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
  for (j in 1:num_sample) {
   print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
@@ -397,19 +397,19 @@ library(rSPDE)
 library(gridExtra)
 library(lattice)
 
+ml_idx <- sample(1:length(long), 2000)
+ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
+
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
-  long <- min_max_scale(long) * 10
-  lat <- min_max_scale(lat) * 10
   long_tr <- long[train_index]
   lat_tr <- lat[train_index]
   y_tr <- y[train_index]
   coords <- cbind(long_tr, lat_tr)
   
   non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                        offset = c(0.5, 1),
-                        cutoff = 0.3)
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(ml_res$phi*0.1, ml_res$phi*1.1))
+  
   
   
   
@@ -492,23 +492,10 @@ for (curr_index in 1:num_fold) {
 
 
 ```{r}
-
-loss_all <- as.data.frame(cbind(loss_inla, loss_dnn, loss_dk, loss_ck))
-
-# write.csv(as.data.frame(loss_all),here::here("other_dataset/satellite/sat_loss.csv"),row.names = FALSE)
-# loss_all <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
-
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
-   coord_flip()
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
-   coord_flip()
-# 
-# write.csv(as.data.frame(pred_dnn),here::here("other_dataset/satellite/dnn_pred.csv"),row.names = FALSE)
-# write.csv(as.data.frame(pred_dk),here::here("other_dataset/satellite/dk_pred.csv"),row.names = FALSE)
-# write.csv(as.data.frame(pred_ck),here::here("other_dataset/satellite/ck_pred.csv"),row.names = FALSE)
-# write.csv(as.data.frame(pred_inla),here::here("other_dataset/satellite/inla_pred.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_dnn),here::here("D:/77/Reasearch/temp/sat_pred/dnn_pred_sat.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_dk),here::here("D:/77/Reasearch/temp/sat_pred/dk_pred_sat.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_ck),here::here("D:/77/Reasearch/temp/sat_pred/ck_pred_sat.csv"),row.names = FALSE)
+write.csv(as.data.frame(pred_inla),here::here("D:/77/Reasearch/temp/sat_pred/inla_pred_sat.csv"),row.names = FALSE)
 
 
 ```

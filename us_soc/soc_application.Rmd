@@ -131,7 +131,9 @@ for (curr_index in 1:num_fold) {
   
   x_tr <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[train_index,]
   x_te <- as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[-train_index,]
+  
 
+  
   y_tr <- y[train_index]
   y_te <- y[-train_index]
 
@@ -191,9 +193,6 @@ for (j in 1:num_sample) {
 # Deep Kriging
 
 ```{r}
-
-
-
 for (curr_index in 1:num_fold) {
   
   train_index <- which(train_index_all != curr_index)
@@ -389,21 +388,22 @@ library(INLA)
 library(rSPDE)
 library(gridExtra)
 library(lattice)
+long <- us_soc$long
+lat <- us_soc$lat
+y <- us_soc$soc
 
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
-  long <- min_max_scale(long) * 10
-  lat <- min_max_scale(lat) * 10
+  long <- long
+  lat <- lat
   long_tr <- long[train_index]
   lat_tr <- lat[train_index]
   y_tr <- y[train_index]
   coords <- cbind(long_tr, lat_tr)
   
   non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                        offset = c(0.5, 1),
-                        cutoff = 0.3)
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1))
   
   
   
@@ -494,14 +494,6 @@ write.csv(as.data.frame(loss_all),here::here("us_soc/soc_loss.csv"),row.names = 
 
 
 loss_all <- read.csv(here::here("us_soc/soc_loss.csv"))
-loss_inla_ck <- loss_all[,c(1,4)]
-
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_inla_ck), aes(x = variable, y = value)) +
-   coord_flip()
-ggplot() +
-  geom_boxplot(data = reshape2::melt(loss_all), aes(x = variable, y = value)) +
-   coord_flip()
 
 write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/dnn_pred_soc.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/dk_pred_soc.csv",row.names = FALSE)

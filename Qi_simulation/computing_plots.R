@@ -27,10 +27,10 @@ loss_all <- as.matrix(read.csv(here::here("Qi_simulation/eh_loss.csv")))
 sim_size = 300
 
 egg_fun <- function(x,y){
-  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+  out <- -(500*y + 47)*sin(sqrt(abs(500*x/2 + 500*y + 47))) - 500*x*sin(sqrt(abs(500*x-(500*y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
