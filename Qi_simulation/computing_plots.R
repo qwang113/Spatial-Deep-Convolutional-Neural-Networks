@@ -1,7 +1,5 @@
 library(ggplot2)
 
-
-
 pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/dnn_pred_eh.csv"))
 pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/dk_pred_eh.csv"))
 pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/ck_pred_eh.csv"))

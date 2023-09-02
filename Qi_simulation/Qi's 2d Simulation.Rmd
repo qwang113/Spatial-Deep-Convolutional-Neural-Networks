@@ -410,9 +410,8 @@ lat_s <- scale(lat)
 #   
 # )
 
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
-ml_idx <- sample(1:length(long), 2000)
-ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
 
 
 for (curr_index in 1:num_fold) {
@@ -425,7 +424,7 @@ for (curr_index in 1:num_fold) {
   print("Building mesh . . .")
   
   non_convex_bdry <- inla.nonconvex.hull(coords, -0.3, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(ml_res$phi*0.1, ml_res$phi*1.1))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(inla_range, inla_range*2))
   
   
   A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
@@ -501,6 +500,8 @@ for (curr_index in 1:num_fold) {
   pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
 }
 
+inla_mse <- mean((apply(pred_inla, 1, mean) - y)^2)
+print(inla_mse)
 
 
 ```
@@ -518,7 +519,13 @@ write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_eh.csv",row.n
 # Prediction MSE
 
 ```{r}
+sim_size = 300
+long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
+y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
+
+long <- expand.grid(long_grid, lat_grid)[,1]
+lat <- expand.grid(long_grid, lat_grid)[,2]
 dnn_mse <- mean((apply(pred_dnn, 1, mean) - y)^2)
 dk_mse <- mean((apply(pred_dk, 1, mean) - y)^2)
 ck_mse <- mean((apply(pred_ck, 1, mean) - y)^2)
@@ -529,12 +536,7 @@ inla_mse <- mean((apply(pred_inla, 1, mean) - y)^2)
 # CRPS Calculation
 
 ```{r}
-long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
-y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
 
 library(verification)
 calculate_dist_between <- function(x){

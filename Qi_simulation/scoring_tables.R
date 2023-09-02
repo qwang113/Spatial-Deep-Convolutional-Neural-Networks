@@ -9,7 +9,7 @@ icr_ck <- sum( y>apply(pred_ck, 1,quantile, 0.025) & y<apply(pred_ck, 1,quantile
 score_tab <- 
 rbind(
   
-apply(loss_all, 2, mean)
+  apply(cbind(inla_mse,dnn_mse,dk_mse,ck_mse),2, mean)
 ,
 -apply(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all),2, mean)
 ,
