@@ -370,7 +370,7 @@ mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
   epochs=500,
-  batch_size=500,
+  batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -482,7 +482,6 @@ for (curr_index in 1:num_fold) {
   # <- inla.posterior.sample(n = num_sample, p.res.pred)
   temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
   pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-  loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
 
 

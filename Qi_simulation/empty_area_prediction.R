@@ -22,10 +22,10 @@ min_max_scale <- function(x)
 sim_size = 300
 
 egg_fun <- function(x,y){
-  out <- -(y + 47)*sin(sqrt(abs(x/2 + y + 47))) - x*sin(sqrt(abs(x-(y + 47))))
+  out <- -(500*y + 47)*sin(sqrt(abs(500*x/2 + 500*y + 47))) - 500*x*sin(sqrt(abs(500*x-(500*y + 47))))
 }
 
-long_grid = lat_grid <- seq(from = -500, to = 500, length.out = sim_size)
+long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
 y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
 
@@ -105,7 +105,7 @@ pred_empty_area_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_empty_area_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_empty_area_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
-test_area_index <- which(long >= 300 & long <=400 & lat >= -250 & lat <= 250 )
+test_area_index <- which(long >= 300/500 & long <=400/500 & lat >= -250/500 & lat <= 250/500 )
 
 
 
@@ -375,21 +375,25 @@ library(INLA)
 library(rSPDE)
 library(gridExtra)
 library(lattice)
+library(geoR)
+
+ml_idx <- sample(1:length(long), 2000)
+ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], 
+                 ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
+
+
 for (curr_index in 1:num_fold) {
   train_index_temp <- which(train_index_all != curr_index)
   train_index <- train_index_temp[!(train_index_temp %in% test_area_index)]
-  
-  long <- min_max_scale(long) * 10
-  lat <- min_max_scale(lat) * 10
+
   long_tr <- long[train_index]
   lat_tr <- lat[train_index]
   y_tr <- y[train_index]
   coords <- cbind(long_tr, lat_tr)
   
-  non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1), 
-                        offset = c(0.5, 1),
-                        cutoff = 0.3)
+  
+  non_convex_bdry <- inla.nonconvex.hull(coords, -0.3, resolution = c(100, 100))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(ml_res$phi*0.1, ml_res$phi*1.1))
   
   
   

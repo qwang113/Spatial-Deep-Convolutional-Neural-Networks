@@ -124,7 +124,7 @@ basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
 basis_arr_1 <- array(NA, dim = c(nrow(mra_dat), shape_row_1, shape_col_1))
-basis_arr_1_g <- array(NA, dim = c(length(g_long), shape_row_1, shape_col_1))
+# basis_arr_1_g <- array(NA, dim = c(length(g_long), shape_row_1, shape_col_1))
 
 for (i in 1:nrow(mra_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
@@ -138,7 +138,7 @@ for (i in 1:nrow(mra_dat)) {
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
 basis_arr_2 <- array(NA, dim = c(nrow(mra_dat), shape_row_2, shape_col_2))
-basis_arr_2_g <- array(NA, dim = c(length(g_long), shape_row_2, shape_col_2))
+# basis_arr_2_g <- array(NA, dim = c(length(g_long), shape_row_2, shape_col_2))
 for (i in 1:nrow(mra_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
@@ -151,7 +151,7 @@ for (i in 1:nrow(mra_dat)) {
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
 basis_arr_3 <- array(NA, dim = c(nrow(mra_dat), shape_row_3, shape_col_3))
-basis_arr_3_g <- array(NA, dim = c(length(g_long), shape_row_3, shape_col_3))
+# basis_arr_3_g <- array(NA, dim = c(length(g_long), shape_row_3, shape_col_3))
 for (i in 1:nrow(mra_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
