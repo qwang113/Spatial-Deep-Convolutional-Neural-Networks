@@ -48,7 +48,7 @@ coordinates(eh_dat) <- ~ long + lat
 set.seed(0)
 num_fold <- 5
 num_sample <- 100
-pred_drop <- 0.2
+pred_drop <- 0.1
 train_index_all <- sample(1:num_fold, length(y), replace = T)
 
 
@@ -412,8 +412,6 @@ lat_s <- scale(lat)
 
 inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
-
-
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
   long_tr <- long[train_index]
@@ -490,7 +488,7 @@ for (curr_index in 1:num_fold) {
                    family= 'gaussian', quantiles = NULL,
                    control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                    control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                   control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                   control.inla = list(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                    verbose = FALSE) 
   
   index.pred<-inla.stack.index(stk.full, "pred")$data
@@ -510,10 +508,10 @@ print(inla_mse)
 
 
 ```{r}
-write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/dnn_pred_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/dk_pred_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck),"D:/77/Reasearch/temp/ck_pred_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/inla_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/dnn_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/dk_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/ck_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/inla_pred_eh.csv",row.names = FALSE)
 ```
 
 # Prediction MSE
@@ -560,10 +558,10 @@ crps <- function(prediction_matrix, true_value){
   return(res)
 }
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/dnn_pred_eh.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/dk_pred_eh.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/ck_pred_eh.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/inla_pred_eh.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/dnn_pred_eh.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/dk_pred_eh.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/ck_pred_eh.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/inla_pred_eh.csv"))
 
 
 
@@ -572,15 +570,15 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-write.csv(crps_dnn_all,"D:/77/Reasearch/temp/crps_dnn_eh.csv",row.names = FALSE)
-write.csv(crps_dk_all,"D:/77/Reasearch/temp/crps_dk_eh.csv",row.names = FALSE)
-write.csv(crps_ck_all,"D:/77/Reasearch/temp/crps_ck_eh.csv",row.names = FALSE)
-write.csv(crps_inla_all,"D:/77/Reasearch/temp/crps_inla_eh.csv",row.names = FALSE)
+write.csv(crps_dnn_all,"D:/77/Research/temp/crps_dnn_eh.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Research/temp/crps_dk_eh.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Research/temp/crps_ck_eh.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Research/temp/crps_inla_eh.csv",row.names = FALSE)
 
-crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dnn_eh.csv"))
-crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_dk_eh.csv"))
-crps_ck_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_ck_eh.csv"))
-crps_inla_all <- as.matrix(read.csv("D:/77/Reasearch/temp/crps_inla_eh.csv"))
+crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/crps_dnn_eh.csv"))
+crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/crps_dk_eh.csv"))
+crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/crps_ck_eh.csv"))
+crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/crps_inla_eh.csv"))
 
 print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
 print(paste("CRPS of DK is: ", mean(crps_dk_all)))
@@ -625,10 +623,10 @@ int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
 
-write.csv(int_score_dnn,"D:/77/Reasearch/temp/int_dnn_eh.csv",row.names = FALSE)
-write.csv(int_score_dk,"D:/77/Reasearch/temp/int_dk_eh.csv",row.names = FALSE)
-write.csv(int_score_ck,"D:/77/Reasearch/temp/int_ck_eh.csv",row.names = FALSE)
-write.csv(int_score_inla,"D:/77/Reasearch/temp/int_inla_eh.csv",row.names = FALSE)
+write.csv(int_score_dnn,"D:/77/Research/temp/int_dnn_eh.csv",row.names = FALSE)
+write.csv(int_score_dk,"D:/77/Research/temp/int_dk_eh.csv",row.names = FALSE)
+write.csv(int_score_ck,"D:/77/Research/temp/int_ck_eh.csv",row.names = FALSE)
+write.csv(int_score_inla,"D:/77/Research/temp/int_inla_eh.csv",row.names = FALSE)
 
 
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
