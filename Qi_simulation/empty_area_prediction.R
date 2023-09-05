@@ -94,7 +94,7 @@ for (i in 1:nrow(eh_dat)) {
 
 num_fold <- 5
 num_sample <- 100
-pred_drop <- 0.2
+pred_drop <- 0.1
 
 pred_drop_layer <- layer_dropout(rate=pred_drop)
 
@@ -377,11 +377,13 @@ library(gridExtra)
 library(lattice)
 library(geoR)
 
-ml_idx <- sample(1:length(long), 2000)
-ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], 
-                 ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
+# ml_idx <- sample(1:length(long), 2000)
+# ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], 
+#                  ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
 
 
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
+mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(inla_range, inla_range*2))
 for (curr_index in 1:num_fold) {
   train_index_temp <- which(train_index_all != curr_index)
   train_index <- train_index_temp[!(train_index_temp %in% test_area_index)]
@@ -470,9 +472,9 @@ for (curr_index in 1:num_fold) {
 }
 
 
-write.csv(as.data.frame(pred_empty_area_dnn),"D:/77/Reasearch/temp/dnn_pred_empty_area_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_empty_area_dk),"D:/77/Reasearch/temp/dk_pred_empty_area_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_empty_area_ck),"D:/77/Reasearch/temp/ck_pred_empty_area_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_empty_area_inla),"D:/77/Reasearch/temp/inla_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_dnn),"D:/77/Reasearch/temp/eh_pred/dnn_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_dk),"D:/77/Reasearch/temp/eh_pred/dk_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_ck),"D:/77/Reasearch/temp/eh_pred/ck_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_inla),"D:/77/Reasearch/temp/eh_pred/inla_pred_empty_area_eh.csv",row.names = FALSE)
 
 

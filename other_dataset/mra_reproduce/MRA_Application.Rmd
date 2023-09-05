@@ -40,7 +40,7 @@ grid_res <- 200
 set.seed(0)
 num_fold <- 5
 num_sample <- 100
-pred_drop <- 0.2
+pred_drop <- 0.1
 train_index_all <- sample(1:num_fold, length(y), replace = T)
 loss_dnn <- rep(NA, num_fold)
 loss_dk <- rep(NA, num_fold)
@@ -414,7 +414,7 @@ mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
   epochs=500,
-  batch_size=1000,
+  batch_size=2000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -446,10 +446,10 @@ library(rSPDE)
 library(gridExtra)
 library(lattice)
 
-
-ml_idx <- sample(1:length(long), 2000)
-ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,min(abs(diff(long)))))
-
+# 
+# ml_idx <- sample(1:length(long), 2000)
+# ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,min(abs(diff(long)))))
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 10
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
@@ -461,7 +461,7 @@ for (curr_index in 1:num_fold) {
   print("Building mesh . . .")
   
   non_convex_bdry <- inla.nonconvex.hull(coords, -0.3, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(ml_res$phi*0.1, ml_res$phi*1.1))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(inla_range, inla_range*2))
   
   
   A<-inla.spde.make.A(mesh=mesh4,loc=as.matrix(coords))
@@ -494,6 +494,7 @@ for (curr_index in 1:num_fold) {
                family= 'gaussian',   #which family the data comes from
                control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
                control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+               control.inla = list(strategy = 'simplified.laplace', huge = TRUE),
                verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
   
   
@@ -527,7 +528,7 @@ for (curr_index in 1:num_fold) {
                    family= 'gaussian', quantiles = NULL,
                    control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                    control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                   control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                   control.inla = list(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                    verbose = FALSE) 
   
   index.pred<-inla.stack.index(stk.full, "pred")$data
@@ -537,7 +538,7 @@ for (curr_index in 1:num_fold) {
   pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
   loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
-}
+
 
 # 
 # 
@@ -585,10 +586,10 @@ for (curr_index in 1:num_fold) {
 
 ```{r}
 
-write.csv(as.data.frame(pred_dnn),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk),"D:/77/Reasearch/temp/mra_pred/dk_pred_mra.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck),"D:/77/Reasearch/temp/mra_pred/ck_pred_mra.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/mra_pred/dnn_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/mra_pred/dk_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/mra_pred/ck_pred_mra.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/mra_pred/inla_pred_mra.csv",row.names = FALSE)
 
 # 
 # write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra_g.csv",row.names = FALSE)
@@ -604,6 +605,7 @@ write.csv(as.data.frame(pred_inla),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra.
 ```{r}
 mra_dat <- unique(read.csv(here::here("other_dataset/mra_reproduce/MIRSmra.csv"), header = F))
 colnames(mra_dat) <- c("long","lat","y")
+mra_dat <- aggregate(y~long + lat, data = mra_dat, FUN = mean)
 long <- mra_dat$long
 lat <- mra_dat$lat
 y <- mra_dat$y
@@ -631,10 +633,10 @@ crps <- function(prediction_matrix, true_value){
   return(res)
 }
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dnn_pred_mra.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dk_pred_mra.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/ck_pred_mra.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/inla_pred_mra.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/inla_pred_mra.csv"))
 
 
 
@@ -643,15 +645,15 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-write.csv(crps_dnn_all,"D:/77/Reasearch/temp/mra_pred/crps_dnn_mra.csv",row.names = FALSE)
-write.csv(crps_dk_all,"D:/77/Reasearch/temp/mra_pred/crps_dk_mra.csv",row.names = FALSE)
-write.csv(crps_ck_all,"D:/77/Reasearch/temp/mra_pred/crps_ck_mra.csv",row.names = FALSE)
-write.csv(crps_inla_all,"D:/77/Reasearch/temp/mra_pred/crps_inla_mra.csv",row.names = FALSE)
+write.csv(crps_dnn_all,"D:/77/Research/temp/mra_pred/crps_dnn_mra.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Research/temp/mra_pred/crps_dk_mra.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Research/temp/mra_pred/crps_ck_mra.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Research/temp/mra_pred/crps_inla_mra.csv",row.names = FALSE)
 
-crps_dnn_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_dnn_mra.csv"))
-crps_dk_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_dk_mra.csv"))
-crps_ck_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_ck_mra.csv"))
-crps_inla_all <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_inla_mra.csv"))
+crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/crps_dnn_mra.csv"))
+crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/crps_dk_mra.csv"))
+crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/crps_ck_mra.csv"))
+crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/crps_inla_mra.csv"))
 
 
 
@@ -693,10 +695,10 @@ int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
 
-write.csv(int_score_dnn,"D:/77/Reasearch/temp/mra_pred/int_dnn_mra.csv",row.names = FALSE)
-write.csv(int_score_dk,"D:/77/Reasearch/temp/mra_pred/int_dk_mra.csv",row.names = FALSE)
-write.csv(int_score_ck,"D:/77/Reasearch/temp/mra_pred/int_ck_mra.csv",row.names = FALSE)
-write.csv(int_score_inla,"D:/77/Reasearch/temp/mra_pred/int_inla_mra.csv",row.names = FALSE)
+write.csv(int_score_dnn,"D:/77/Research/temp/mra_pred/int_dnn_mra.csv",row.names = FALSE)
+write.csv(int_score_dk,"D:/77/Research/temp/mra_pred/int_dk_mra.csv",row.names = FALSE)
+write.csv(int_score_ck,"D:/77/Research/temp/mra_pred/int_ck_mra.csv",row.names = FALSE)
+write.csv(int_score_inla,"D:/77/Research/temp/mra_pred/int_inla_mra.csv",row.names = FALSE)
 
 
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
@@ -705,18 +707,4 @@ print(paste("Interval Score of CK is: ", mean(int_score_ck )))
 print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 
 ```
-```{r}
 
-# facet_zoom() add some layers to the plot
-# Add uncertainty surface
-# Write all three datasets
-
-
-
-
-
-```
-
-
-  
-```

@@ -508,10 +508,10 @@ print(inla_mse)
 
 
 ```{r}
-write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/dnn_pred_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/dk_pred_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/ck_pred_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/inla_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/eh_pred/dnn_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/eh_pred/dk_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/eh_pred/ck_pred_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/eh_pred/inla_pred_eh.csv",row.names = FALSE)
 ```
 
 # Prediction MSE

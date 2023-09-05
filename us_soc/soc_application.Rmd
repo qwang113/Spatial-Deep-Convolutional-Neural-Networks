@@ -39,7 +39,7 @@ coordinates(soc_dat) <- ~ long + lat
 set.seed(0)
 num_fold <- 5
 num_sample <- 100
-pred_drop <- 0.2
+pred_drop <- 0.1
 train_index_all <- sample(1:num_fold, length(y), replace = T)
 loss_dnn <- rep(NA, num_fold)
 loss_dk <- rep(NA, num_fold)
@@ -361,7 +361,7 @@ mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
   epochs=500,
-  batch_size=100,
+  batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -392,6 +392,7 @@ long <- us_soc$long
 lat <- us_soc$lat
 y <- us_soc$soc
 
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
@@ -403,7 +404,7 @@ for (curr_index in 1:num_fold) {
   coords <- cbind(long_tr, lat_tr)
   
   non_convex_bdry <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(0.5,1))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(inla_range, inla_range*2))
   
   
   
