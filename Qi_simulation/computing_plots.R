@@ -1,24 +1,24 @@
 library(ggplot2)
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/dnn_pred_eh.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/dk_pred_eh.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/ck_pred_eh.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/inla_pred_eh.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dnn_pred_eh.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dk_pred_eh.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/ck_pred_eh.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/inla_pred_eh.csv"))
 
-pred_empty_area_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/dnn_pred_empty_area_eh.csv"))
-pred_empty_area_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/dk_pred_empty_area_eh.csv"))
-pred_empty_area_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/ck_pred_empty_area_eh.csv"))
-pred_empty_area_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/eh_pred/inla_pred_empty_area_eh.csv"))
+pred_empty_area_dnn <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dnn_pred_empty_area_eh.csv"))
+pred_empty_area_dk <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dk_pred_empty_area_eh.csv"))
+pred_empty_area_ck <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/ck_pred_empty_area_eh.csv"))
+pred_empty_area_inla <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/inla_pred_empty_area_eh.csv"))
 
-crps_dnn_all <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/crps_dnn_eh.csv")$x, ncol = 1)
-crps_dk_all <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/crps_dk_eh.csv")$x, ncol = 1)
-crps_ck_all <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/crps_ck_eh.csv")$x, ncol = 1)
-crps_inla_all <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/crps_inla_eh.csv")$x, ncol = 1)
+crps_dnn_all <- matrix(read.csv("D:/77/Research/temp/eh_pred/crps_dnn_eh.csv")$x, ncol = 1)
+crps_dk_all <- matrix(read.csv("D:/77/Research/temp/eh_pred/crps_dk_eh.csv")$x, ncol = 1)
+crps_ck_all <- matrix(read.csv("D:/77/Research/temp/eh_pred/crps_ck_eh.csv")$x, ncol = 1)
+crps_inla_all <- matrix(read.csv("D:/77/Research/temp/eh_pred/crps_inla_eh.csv")$x, ncol = 1)
 
-int_score_dnn <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/int_dnn_eh.csv")$x, ncol = 1)
-int_score_dk <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/int_dk_eh.csv")$x, ncol = 1)
-int_score_ck <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/int_ck_eh.csv")$x, ncol = 1)
-int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/eh_pred/int_inla_eh.csv")$x, ncol = 1)
+int_score_dnn <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_dnn_eh.csv")$x, ncol = 1)
+int_score_dk <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_dk_eh.csv")$x, ncol = 1)
+int_score_ck <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_ck_eh.csv")$x, ncol = 1)
+int_score_inla <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_inla_eh.csv")$x, ncol = 1)
 
 loss_all <- as.matrix(read.csv(here::here("Qi_simulation/eh_loss.csv")))
 
@@ -64,13 +64,13 @@ obs_sur_emp <-
   ggplot() +
   geom_raster(aes(x = long[-test_area_index], y = lat[-test_area_index], fill = y[-test_area_index])) +
   scale_fill_viridis_c() + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "True Surface with Empty Block") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "True Surface with Rectangle Block Subtracted") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")
 
 
 
@@ -167,10 +167,10 @@ sd_sur_dnn_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, sd))) +
   scale_fill_viridis_c(limits = c(0,upper_emp)) +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -179,10 +179,10 @@ sd_sur_dk_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, sd))) +
   scale_fill_viridis_c(limits = c(0,upper_emp)) +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DK Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -191,10 +191,10 @@ sd_sur_ck_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, sd))) +
   scale_fill_viridis_c(limits = c(0,upper_emp)) +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CK Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -203,65 +203,66 @@ sd_sur_inla_emp <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, sd))) +
   scale_fill_viridis_c(limits = c(0,upper_emp)) +
-  geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-  geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Standard Deviation Surface(Empty Block)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 cowplot::plot_grid(sd_sur_inla_emp, sd_sur_dnn_emp, sd_sur_dk_emp, sd_sur_ck_emp)
 
-# # mean with empty block------------------------------------------------------------------
-# pred_sur_dnn_emp <-
-# ggplot() +
-#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
-#   scale_fill_viridis_c() +
-#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Standard Deviation Surface(Empty Block Added)") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5))
-# 
-# pred_sur_dk_emp <-
-# ggplot() +
-#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, mean))) +
-#   scale_fill_viridis_c()+
-#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Standard Deviation Surface(Empty Block Added)") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5))
-# 
-# pred_sur_ck_emp <-
-# ggplot() +
-#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, mean))) +
-#   scale_fill_viridis_c()+
-#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Standard Deviation Surface(Empty Block Added)") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5))
-# 
-# pred_sur_inla_emp <-
-# ggplot() +
-#   geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, mean))) +
-#   scale_fill_viridis_c() +
-#   geom_line(aes(x = c(300,400),y = c(-250,-250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,400),y = c(250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(300,300),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed") +
-#   geom_line(aes(x = c(400,400),y = c(-250,250)), color = "red", linewidth = 1, linetype = "dashed")  +
-#   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Standard Deviation Surface(Empty Block Added)") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5))
+# mean with empty block------------------------------------------------------------------
+pred_sur_dnn_emp <-
+ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dnn, 1, mean))) +
+  scale_fill_viridis_c() +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
+pred_sur_dk_emp <-
+ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_dk, 1, mean))) +
+  scale_fill_viridis_c()+
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+pred_sur_ck_emp <-
+ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_ck, 1, mean))) +
+  scale_fill_viridis_c()+
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+pred_sur_inla_emp <-
+ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = apply(pred_empty_area_inla, 1, mean))) +
+  scale_fill_viridis_c() +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),min(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
+  geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Standard Deviation Surface(Empty Block Added)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+cowplot::plot_grid(pred_sur_inla_emp, pred_sur_dnn_emp, pred_sur_dk_emp, pred_sur_ck_emp)
 
 # Scores (crps)------------------------------------------------------------------
 
@@ -273,7 +274,7 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
                     labels = c("INLA", "DNN", "DK", "CK")) +
   labs(fill = "Model", y = "Negative CRPS") + 
-  facet_zoom(ylim = c(0,15)) +
+  facet_zoom(ylim = c(0,10)) +
   theme_classic()
 
 
@@ -286,7 +287,7 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(int_score_inla,int_score_dnn,in
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
                     labels = c("INLA", "DNN", "DK", "CK")) +
   labs(fill = "Model", y = "Interval Score") + 
-  facet_zoom(ylim = c(0,1000)) +
+  facet_zoom(ylim = c(0,100)) +
   theme_classic()
 
 

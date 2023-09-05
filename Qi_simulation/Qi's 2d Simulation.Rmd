@@ -366,7 +366,7 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
-  epochs=500,
+  epochs=1000,
   batch_size=2000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
@@ -410,7 +410,7 @@ lat_s <- scale(lat)
 #   
 # )
 
-inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 10
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
@@ -558,10 +558,10 @@ crps <- function(prediction_matrix, true_value){
   return(res)
 }
 
-pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/dnn_pred_eh.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Research/temp/dk_pred_eh.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Research/temp/ck_pred_eh.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Research/temp/inla_pred_eh.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dnn_pred_eh.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dk_pred_eh.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/ck_pred_eh.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/inla_pred_eh.csv"))
 
 
 
@@ -570,15 +570,15 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-write.csv(crps_dnn_all,"D:/77/Research/temp/crps_dnn_eh.csv",row.names = FALSE)
-write.csv(crps_dk_all,"D:/77/Research/temp/crps_dk_eh.csv",row.names = FALSE)
-write.csv(crps_ck_all,"D:/77/Research/temp/crps_ck_eh.csv",row.names = FALSE)
-write.csv(crps_inla_all,"D:/77/Research/temp/crps_inla_eh.csv",row.names = FALSE)
+write.csv(crps_dnn_all,"D:/77/Research/temp/eh_pred/crps_dnn_eh.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Research/temp/eh_pred/crps_dk_eh.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Research/temp/eh_pred/crps_ck_eh.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Research/temp/eh_pred/crps_inla_eh.csv",row.names = FALSE)
 
-crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/crps_dnn_eh.csv"))
-crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/crps_dk_eh.csv"))
-crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/crps_ck_eh.csv"))
-crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/crps_inla_eh.csv"))
+crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/crps_dnn_eh.csv"))
+crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/crps_dk_eh.csv"))
+crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/crps_ck_eh.csv"))
+crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/crps_inla_eh.csv"))
 
 print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
 print(paste("CRPS of DK is: ", mean(crps_dk_all)))
