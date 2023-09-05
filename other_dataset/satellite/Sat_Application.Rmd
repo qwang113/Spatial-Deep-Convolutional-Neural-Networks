@@ -399,7 +399,7 @@ library(lattice)
 
 # ml_idx <- sample(1:length(long), 2000)
 # ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,sort(unique(diff(long)))[2]))
-inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 10
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
 for (curr_index in 1:num_fold) {
   print(paste("Now doing index ", curr_index))

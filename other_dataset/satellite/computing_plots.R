@@ -18,23 +18,21 @@ ggplot() +
 # Mean surface -----------------------------------------------------------------
 library(ggplot2)
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred/dnn_pred_sat.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred/dk_pred_sat.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred/ck_pred_sat.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/sat_pred//inla_pred_sat.csv"))
-loss_mse <- read.csv(here::here("other_dataset/satellite/sat_loss.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/sat_pred/dnn_pred_sat.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/sat_pred/dk_pred_sat.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/sat_pred/ck_pred_sat.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/sat_pred//inla_pred_sat.csv"))
 
-crps_dnn_all <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/crps_dnn_sat.csv")$x, ncol = 1)
-crps_dk_all <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/crps_dk_sat.csv")$x, ncol = 1)
-crps_ck_all <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/crps_ck_sat.csv")$x, ncol = 1)
-crps_inla_all <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/crps_inla_sat.csv")$x, ncol = 1)
+crps_dnn_all <- matrix(read.csv("D:/77/Research/temp/sat_pred/crps_dnn_sat.csv")$x, ncol = 1)
+crps_dk_all <- matrix(read.csv("D:/77/Research/temp/sat_pred/crps_dk_sat.csv")$x, ncol = 1)
+crps_ck_all <- matrix(read.csv("D:/77/Research/temp/sat_pred/crps_ck_sat.csv")$x, ncol = 1)
+crps_inla_all <- matrix(read.csv("D:/77/Research/temp/sat_pred/crps_inla_sat.csv")$x, ncol = 1)
 
-int_score_dnn <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_dnn_sat.csv")$x, ncol = 1)
-int_score_dk <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_dk_sat.csv")$x, ncol = 1)
-int_score_ck <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_ck_sat.csv")$x, ncol = 1)
-int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/sat_pred/int_inla_sat.csv")$x, ncol = 1)
+int_score_dnn <- matrix(read.csv("D:/77/Research/temp/sat_pred/int_dnn_sat.csv")$x, ncol = 1)
+int_score_dk <- matrix(read.csv("D:/77/Research/temp/sat_pred/int_dk_sat.csv")$x, ncol = 1)
+int_score_ck <- matrix(read.csv("D:/77/Research/temp/sat_pred/int_ck_sat.csv")$x, ncol = 1)
+int_score_inla <- matrix(read.csv("D:/77/Research/temp/sat_pred/int_inla_sat.csv")$x, ncol = 1)
 
-loss_all <- as.matrix(read.csv(here::here("other_dataset/satellite/sat_loss.csv")))
 
 # mean -------------------------------------------------------------------------------------
 pred_sur_dnn <-
@@ -129,7 +127,7 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
                     labels = c("INLA", "DNN", "DK", "CK")) +
   labs(fill = "Model", y = "Negative CRPS") + 
-  facet_zoom(ylim = c(0,3)) +
+  facet_zoom(ylim = c(0,1.5)) +
   theme_classic()
 
 
@@ -143,6 +141,6 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(int_score_inla,int_score_dnn,in
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
                     labels = c("INLA", "DNN", "DK", "CK")) +
   labs(fill = "Model", y = "Interval Score") + 
-  facet_zoom(ylim = c(0,75)) +
+  facet_zoom(ylim = c(0,20)) +
   theme_classic()
 
