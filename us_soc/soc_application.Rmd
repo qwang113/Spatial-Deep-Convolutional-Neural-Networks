@@ -245,7 +245,7 @@ model_dk %>% compile(
   
   
 mod_train_dk <- model_dk %>%
-  fit(x = x_tr, y = y_tr, epochs =500, batch_size = 200, 
+  fit(x = x_tr, y = y_tr, epochs =1000, batch_size = 200, 
       validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
 
 
@@ -360,7 +360,7 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
-  epochs=500,
+  epochs=1000,
   batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
