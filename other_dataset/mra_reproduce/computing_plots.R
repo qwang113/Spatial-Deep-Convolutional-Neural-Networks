@@ -15,26 +15,26 @@ g_lat <- expand.grid(grid_long,grid_lat)[,2]
 long <- mra_dat$long-180
 # Mean surface -----------------------------------------------------------------
 
-pred_dnn <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dnn_pred_mra.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dk_pred_mra.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/ck_pred_mra.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred//inla_pred_mra.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/mra_pred//inla_pred_mra.csv"))
 loss_mse <- read.csv(here::here("other_dataset/mra_reproduce/mra_loss.csv"))
 
-pred_dnn_g <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dnn_pred_mra_g.csv"))
-pred_dk_g <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/dk_pred_mra_g.csv"))
-pred_ck_g <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred/ck_pred_mra_g.csv"))
-pred_inla_g <- as.matrix(read.csv("D:/77/Reasearch/temp/mra_pred//inla_pred_mra_g.csv"))
+pred_dnn_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra_g.csv"))
+pred_dk_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra_g.csv"))
+pred_ck_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra_g.csv"))
+pred_inla_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred//inla_pred_mra_g.csv"))
 
-crps_dnn_all <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_dnn_mra.csv")$x, ncol = 1)
-crps_dk_all <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_dk_mra.csv")$x, ncol = 1)
-crps_ck_all <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_ck_mra.csv")$x, ncol = 1)
-crps_inla_all <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/crps_inla_mra.csv")$x, ncol = 1)
+crps_dnn_all <- matrix(read.csv("D:/77/Research/temp/mra_pred/crps_dnn_mra.csv")$x, ncol = 1)
+crps_dk_all <- matrix(read.csv("D:/77/Research/temp/mra_pred/crps_dk_mra.csv")$x, ncol = 1)
+crps_ck_all <- matrix(read.csv("D:/77/Research/temp/mra_pred/crps_ck_mra.csv")$x, ncol = 1)
+crps_inla_all <- matrix(read.csv("D:/77/Research/temp/mra_pred/crps_inla_mra.csv")$x, ncol = 1)
 
-int_score_dnn <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/int_dnn_mra.csv")$x, ncol = 1)
-int_score_dk <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/int_dk_mra.csv")$x, ncol = 1)
-int_score_ck <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/int_ck_mra.csv")$x, ncol = 1)
-int_score_inla <- matrix(read.csv("D:/77/Reasearch/temp/mra_pred/int_inla_mra.csv")$x, ncol = 1)
+int_score_dnn <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_dnn_mra.csv")$x, ncol = 1)
+int_score_dk <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_dk_mra.csv")$x, ncol = 1)
+int_score_ck <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_ck_mra.csv")$x, ncol = 1)
+int_score_inla <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_inla_mra.csv")$x, ncol = 1)
 
 loss_all <- as.matrix(read.csv(here::here("other_dataset/mra_reproduce/loss_mra.csv")))
 

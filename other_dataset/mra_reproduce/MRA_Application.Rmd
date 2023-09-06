@@ -42,26 +42,22 @@ num_fold <- 5
 num_sample <- 100
 pred_drop <- 0.1
 train_index_all <- sample(1:num_fold, length(y), replace = T)
-loss_dnn <- rep(NA, num_fold)
-loss_dk <- rep(NA, num_fold)
-loss_ck <- rep(NA, num_fold)
-loss_inla <- rep(NA, num_fold)
 
 pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
-# 
-# pred_dnn_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
-# pred_dk_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
-# pred_ck_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
-# pred_inla_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
-# 
-# grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
-# grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
-# 
-# g_long <- expand.grid(grid_long, grid_lat)[,1]
-# g_lat <- expand.grid(grid_long,grid_lat)[,2]  
+
+pred_dnn_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+pred_dk_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+pred_ck_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+pred_inla_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
+
+grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
+grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
+
+g_long <- expand.grid(grid_long, grid_lat)[,1]
+g_lat <- expand.grid(grid_long,grid_lat)[,2]
 
 ```
 # Basis Generating
@@ -80,22 +76,22 @@ basis_1 <- matrix(NA, nrow = nrow(mra_dat), ncol = length(gridbasis1@fn))
 for (i in 1:length(gridbasis1@fn)) {
   basis_1[,i] <- gridbasis1@fn[[i]](coordinates(mra_dat))
 }
-# 
-# basis_1_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis1@fn))
-# for (i in 1:length(gridbasis1@fn)) {
-#   basis_1_g[,i] <- gridbasis1@fn[[i]](coordinates(cbind(g_long, g_lat)))
-# }
+
+basis_1_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis1@fn))
+for (i in 1:length(gridbasis1@fn)) {
+  basis_1_g[,i] <- gridbasis1@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
 
 
 basis_2 <- matrix(NA, nrow = nrow(mra_dat), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
   basis_2[,i] <- gridbasis2@fn[[i]](coordinates(mra_dat))
 }
-# 
-# basis_2_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis2@fn))
-# for (i in 1:length(gridbasis2@fn)) {
-#   basis_2_g[,i] <- gridbasis2@fn[[i]](coordinates(cbind(g_long, g_lat)))
-# }
+
+basis_2_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis2@fn))
+for (i in 1:length(gridbasis2@fn)) {
+  basis_2_g[,i] <- gridbasis2@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
 
 
 
@@ -103,61 +99,61 @@ basis_3 <- matrix(NA, nrow = nrow(mra_dat), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
   basis_3[,i] <- gridbasis3@fn[[i]](coordinates(mra_dat))
 }
-# 
-# basis_3_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis3@fn))
-# for (i in 1:length(gridbasis3@fn)) {
-#   basis_3_g[,i] <- gridbasis3@fn[[i]](coordinates(cbind(g_long, g_lat)))
-# }
+
+basis_3_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis3@fn))
+for (i in 1:length(gridbasis3@fn)) {
+  basis_3_g[,i] <- gridbasis3@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
 
 
 # Redefine three layers of basis images
 basis_use_1_2d <- basis_1
 basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
 basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
-# 
-# basis_use_1_2d_g <- basis_1_g
-# basis_use_2_2d_g <- basis_3_g[,(ncol(basis_1_g)+1):ncol(basis_2_g)]
-# basis_use_3_2d_g <- basis_3_g[,(ncol(basis_2_g)+1):ncol(basis_3_g)]
+
+basis_use_1_2d_g <- basis_1_g
+basis_use_2_2d_g <- basis_3_g[,(ncol(basis_1_g)+1):ncol(basis_2_g)]
+basis_use_3_2d_g <- basis_3_g[,(ncol(basis_2_g)+1):ncol(basis_3_g)]
 
 
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
 basis_arr_1 <- array(NA, dim = c(nrow(mra_dat), shape_row_1, shape_col_1))
-# basis_arr_1_g <- array(NA, dim = c(length(g_long), shape_row_1, shape_col_1))
+basis_arr_1_g <- array(NA, dim = c(length(g_long), shape_row_1, shape_col_1))
 
 for (i in 1:nrow(mra_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
 
-# for (i in 1:length(g_long)) {
-#   basis_arr_1_g[i,,] <- matrix(basis_use_1_2d_g[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
-# }
+for (i in 1:length(g_long)) {
+  basis_arr_1_g[i,,] <- matrix(basis_use_1_2d_g[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
 basis_arr_2 <- array(NA, dim = c(nrow(mra_dat), shape_row_2, shape_col_2))
-# basis_arr_2_g <- array(NA, dim = c(length(g_long), shape_row_2, shape_col_2))
+basis_arr_2_g <- array(NA, dim = c(length(g_long), shape_row_2, shape_col_2))
 for (i in 1:nrow(mra_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
-# for (i in 1:length(g_long)) {
-#   basis_arr_2_g[i,,] <- matrix(basis_use_2_2d_g[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
-# }
+for (i in 1:length(g_long)) {
+  basis_arr_2_g[i,,] <- matrix(basis_use_2_2d_g[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
 
 
 # Third resolution
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
 basis_arr_3 <- array(NA, dim = c(nrow(mra_dat), shape_row_3, shape_col_3))
-# basis_arr_3_g <- array(NA, dim = c(length(g_long), shape_row_3, shape_col_3))
+basis_arr_3_g <- array(NA, dim = c(length(g_long), shape_row_3, shape_col_3))
 for (i in 1:nrow(mra_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
-# for (i in 1:length(g_long)) {
-#   basis_arr_3_g[i,,] <- matrix(basis_use_3_2d_g[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
-# }
+for (i in 1:length(g_long)) {
+  basis_arr_3_g[i,,] <- matrix(basis_use_3_2d_g[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
 
 pred_drop_layer <- layer_dropout(rate=pred_drop)
 
@@ -218,7 +214,6 @@ mod_train_dnn <- model_dnn %>%
 
 model_dnn %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
-loss_dnn[curr_index] <- evaluate(model_dnn, x_te, y_te)[2]
 
 for (j in 1:num_sample) {
   print(j)
@@ -230,14 +225,14 @@ for (j in 1:num_sample) {
 
 # Gridwise Prediction
 
-# s_long <- (g_long- min(long))/diff(range(long))
-# s_lat <- (g_lat - min(lat))/diff(range(lat))
-# 
-# 
-# for (j in 1:num_sample) {
-#   print(j)
-#   pred_dnn_g[,j] <- predict(model_dnn, cbind(s_long, s_lat))
-# }
+s_long <- (g_long- min(long))/diff(range(long))
+s_lat <- (g_lat - min(lat))/diff(range(lat))
+
+
+for (j in 1:num_sample) {
+  print(j)
+  pred_dnn_g[,j] <- predict(model_dnn, cbind(s_long, s_lat))
+}
 
 
 ```
@@ -295,7 +290,6 @@ mod_train_dk <- model_dk %>%
 
 model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
-loss_dk[curr_index] <- evaluate(model_dk, x_te, y_te)[2]
 
 for (j in 1:num_sample) {
   print(j)
@@ -305,10 +299,10 @@ for (j in 1:num_sample) {
 }
 
 
-# for (j in 1:num_sample) {
-#   print(j)
-#   pred_dk_g[,j] <- predict(model_dk,cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)) ,basis_1_g, basis_2_g, basis_3_g))
-# }
+for (j in 1:num_sample) {
+  print(j)
+  pred_dk_g[,j] <- predict(model_dk,cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)) ,basis_1_g, basis_2_g, basis_3_g))
+}
 
 
 
@@ -413,15 +407,14 @@ model_ck %>% compile(
 mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
-  epochs=500,
-  batch_size=2000,
+  epochs=1000,
+  batch_size=1000,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
 
 model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 
- loss_ck[curr_index] <- evaluate(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index])[2]
  for (j in 1:num_sample) {
   print(j)
   pred_ck[-train_index,j] <- predict(model_ck, list(basis_te_1,basis_te_2,basis_te_3,cov_te))
@@ -430,10 +423,10 @@ model_ck %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
 }
 
 
-# for (j in 1:num_sample) {
-#   print(j)
-#   pred_ck_g[,j] <- predict(model_ck, list(basis_arr_1_g, basis_arr_2_g, basis_arr_3_g, cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)))))
-# }
+for (j in 1:num_sample) {
+  print(j)
+  pred_ck_g[,j] <- predict(model_ck, list(basis_arr_1_g, basis_arr_2_g, basis_arr_3_g, cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)))))
+}
 
 
 ```
@@ -542,40 +535,40 @@ for (curr_index in 1:num_fold) {
 
 # 
 # 
-# # Prediction for grid
-# Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind(s_long,s_lat));
-# 
-# stk.pred <- inla.stack(data=list(y=NA), 
-#                        A=list(Aprediction,1), 
-#                        effects=list(c(list(Intercept=1)
-#                                       ,iset),
-#                                     list(
-#                                       long = s_long,
-#                                       lat = s_lat
-#                                     )
-#                        ), 
-#                        tag='pred')
-# 
-# #join the prediction stack with the one for the full data
-# stk.full <- inla.stack(stk, stk.pred)
-# 
-# p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
-#                  family= 'gaussian', quantiles = NULL,
-#                  control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
-#                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-#                  control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
-#                  verbose = FALSE) 
-# 
-# index.pred<-inla.stack.index(stk.full, "pred")$data
-# 
-# # <- inla.posterior.sample(n = num_sample, p.res.pred)
-# temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
-# pred_inla_g <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-# 
-# 
-# 
-# 
-# 
+# Prediction for grid
+Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind(s_long,s_lat));
+
+stk.pred <- inla.stack(data=list(y=NA),
+                       A=list(Aprediction,1),
+                       effects=list(c(list(Intercept=1)
+                                      ,iset),
+                                    list(
+                                      long = s_long,
+                                      lat = s_lat
+                                    )
+                       ),
+                       tag='pred')
+
+#join the prediction stack with the one for the full data
+stk.full <- inla.stack(stk, stk.pred)
+
+p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
+                 family= 'gaussian', quantiles = NULL,
+                 control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
+                 control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                 verbose = FALSE)
+
+index.pred<-inla.stack.index(stk.full, "pred")$data
+
+# <- inla.posterior.sample(n = num_sample, p.res.pred)
+temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
+pred_inla_g <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
+
+
+
+
+
 
 
 
@@ -591,11 +584,11 @@ write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/mra_pred/dk_pred_mra.csv",
 write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/mra_pred/ck_pred_mra.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/mra_pred/inla_pred_mra.csv",row.names = FALSE)
 
-# 
-# write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra_g.csv",row.names = FALSE)
-# write.csv(as.data.frame(pred_dk_g),"D:/77/Reasearch/temp/mra_pred/dk_pred_mra_g.csv",row.names = FALSE)
-# write.csv(as.data.frame(pred_ck_g),"D:/77/Reasearch/temp/mra_pred/ck_pred_mra_g.csv",row.names = FALSE)
-# write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra_g.csv",row.names = FALSE)
+
+write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk_g),"D:/77/Reasearch/temp/mra_pred/dk_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck_g),"D:/77/Reasearch/temp/mra_pred/ck_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra_g.csv",row.names = FALSE)
 
 
 
