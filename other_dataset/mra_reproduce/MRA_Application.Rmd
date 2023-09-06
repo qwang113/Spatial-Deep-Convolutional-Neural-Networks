@@ -442,7 +442,7 @@ library(lattice)
 # 
 # ml_idx <- sample(1:length(long), 2000)
 # ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,min(abs(diff(long)))))
-inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 10
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
@@ -529,7 +529,6 @@ for (curr_index in 1:num_fold) {
   # <- inla.posterior.sample(n = num_sample, p.res.pred)
   temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
   pred_inla[-train_index,] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
-  loss_inla[curr_index] <- mean((p.res.pred$summary.linear.predictor[index.pred,"mean"] - y_te)^2)
 }
 
 
@@ -556,7 +555,7 @@ p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  family= 'gaussian', quantiles = NULL,
                  control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                 control.inla = list(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                  verbose = FALSE)
 
 index.pred<-inla.stack.index(stk.full, "pred")$data
@@ -585,10 +584,10 @@ write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/mra_pred/ck_pred_mra.csv",
 write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/mra_pred/inla_pred_mra.csv",row.names = FALSE)
 
 
-write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/mra_pred/dnn_pred_mra_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk_g),"D:/77/Reasearch/temp/mra_pred/dk_pred_mra_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck_g),"D:/77/Reasearch/temp/mra_pred/ck_pred_mra_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/mra_pred/inla_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dnn_g),"D:/77/Research/temp/mra_pred/dnn_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk_g),"D:/77/Research/temp/mra_pred/dk_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck_g),"D:/77/Research/temp/mra_pred/ck_pred_mra_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla_g),"D:/77/Research/temp/mra_pred/inla_pred_mra_g.csv",row.names = FALSE)
 
 
 
