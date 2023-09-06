@@ -361,7 +361,7 @@ mod_train_ck <- model_ck %>% fit(
   x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
   y = y[train_index],
   epochs=1000,
-  batch_size=1000,
+  batch_size=500,
   validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
   callbacks = model_checkpoint, shuffle = TRUE
 )
@@ -436,6 +436,7 @@ for (curr_index in 1:num_fold) {
                family= 'gaussian',   #which family the data comes from
                control.predictor=list(A=inla.stack.A(stk),compute=TRUE),  #compute gives you the marginals of the linear predictor
                control.compute = list(dic = TRUE, waic = TRUE, config = TRUE, return.marginals.predictor = TRUE), #model diagnostics and config = TRUE gives you the GMRF
+               control.inla= list(strategy = 'simplified.laplace', huge = TRUE),
                verbose = FALSE) #can include verbose=TRUE to see the log of the model runs
   
   
@@ -469,7 +470,7 @@ for (curr_index in 1:num_fold) {
                    family= 'gaussian', quantiles = NULL,
                    control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                    control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                   control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                   control.inla= list(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                    verbose = FALSE) 
   
   index.pred<-inla.stack.index(stk.full, "pred")$data
