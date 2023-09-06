@@ -410,7 +410,7 @@ lat_s <- scale(lat)
 #   
 # )
 
-inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 10
+inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
 for (curr_index in 1:num_fold) {
   train_index <- which(train_index_all != curr_index)
