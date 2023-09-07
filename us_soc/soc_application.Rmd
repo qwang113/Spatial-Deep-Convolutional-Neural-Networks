@@ -540,18 +540,20 @@ for (curr_index in 1:num_fold) {
 # 
 # 
 # Prediction for grid
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind(s_long,s_lat));
+# Prediction for grid
+Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat))))
 
 stk.pred <- inla.stack(data=list(y=NA),
                        A=list(Aprediction,1),
                        effects=list(c(list(Intercept=1)
                                       ,iset),
                                     list(
-                                      long = s_long,
-                                      lat = s_lat
+                                      long = (g_long- min(long))/diff(range(long)),
+                                      lat = (g_lat - min(lat))/diff(range(lat))
                                     )
                        ),
                        tag='pred')
+
 
 #join the prediction stack with the one for the full data
 stk.full <- inla.stack(stk, stk.pred)
