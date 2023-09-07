@@ -318,6 +318,8 @@ for (j in 1:num_sample) {
 #Convolutional Kriging
 
 ```{r}
+rm(basis_1, basis_1_g, basis_2, basis_2_g, basis_3, basis_3_g, basis_use_1_2d, basis_use_1_2d_g, basis_use_2_2d, basis_use_2_2d_g, basis_use_3_2d, basis_use_3_2d_g)
+
 
 for (curr_index in 1:num_fold) {
   
@@ -543,15 +545,15 @@ for (curr_index in 1:num_fold) {
 # 
 # 
 # Prediction for grid
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind(s_long,s_lat));
+Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat))))
 
 stk.pred <- inla.stack(data=list(y=NA),
                        A=list(Aprediction,1),
                        effects=list(c(list(Intercept=1)
                                       ,iset),
                                     list(
-                                      long = s_long,
-                                      lat = s_lat
+                                      long = (g_long- min(long))/diff(range(long)),
+                                      lat = (g_lat - min(lat))/diff(range(lat))
                                     )
                        ),
                        tag='pred')
@@ -586,16 +588,16 @@ pred_inla_g <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pre
 
 ```{r}
 
-write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/sat_pred/dnn_pred_sat.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/sat_pred/dk_pred_sat.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/sat_pred/dnn_pred_sat.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/sat_pred/dk_pred_sat.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/sat_pred/ck_pred_sat.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/sat_pred/inla_pred_sat.csv",row.names = FALSE)
 
 
-write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/sat_pred/dnn_pred_sat_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk_g),"D:/77/Reasearch/temp/sat_pred/dk_pred_sat_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck_g),"D:/77/Reasearch/temp/sat_pred/ck_pred_sat_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/sat_pred/inla_pred_sat_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_dnn_g),"D:/77/Research/temp/sat_pred/dnn_pred_sat_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_dk_g),"D:/77/Research/temp/sat_pred/dk_pred_sat_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck_g),"D:/77/Research/temp/sat_pred/ck_pred_sat_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla_g),"D:/77/Research/temp/sat_pred/inla_pred_sat_g.csv",row.names = FALSE)
 
 
 
