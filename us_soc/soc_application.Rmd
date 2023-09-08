@@ -32,7 +32,10 @@ us_soc <- read.csv(here::here("us_soc/soc_2.csv"))
 long <- us_soc$long
 lat <- us_soc$lat
 y <- us_soc$soc
-soc_dat <- as.data.frame(cbind(long, lat, y))
+soc_dat <- na.omit(as.data.frame(cbind(long, lat, y)))
+long <- soc_dat$long
+lat <- soc_dat$lat
+y <- soc_dat$y
 coordinates(soc_dat) <- ~ long + lat
 
 # Parameters setting
@@ -588,10 +591,10 @@ write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/soc_pred/ck_pred_soc.csv",
 write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/soc_pred/inla_pred_soc.csv",row.names = FALSE)
 
 
-write.csv(as.data.frame(pred_dnn_g),"D:/77/Reasearch/temp/soc_pred/dnn_pred_soc_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_dk_g),"D:/77/Reasearch/temp/soc_pred/dk_pred_soc_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck_g),"D:/77/Reasearch/temp/soc_pred/ck_pred_soc_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/soc_pred/inla_pred_soc_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dnn_g),"D:/77/Research/temp/soc_pred/dnn_pred_soc_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk_g),"D:/77/Research/temp/soc_pred/dk_pred_soc_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_ck_g),"D:/77/Research/temp/soc_pred/ck_pred_soc_g.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_inla_g),"D:/77/Research/temp/soc_pred/inla_pred_soc_g.csv",row.names = FALSE)
 
 
 
@@ -601,9 +604,9 @@ write.csv(as.data.frame(pred_inla_g),"D:/77/Reasearch/temp/soc_pred/inla_pred_so
 # CRPS Calculation
 
 ```{r}
-long <- us_soc$long
-lat <- us_soc$lat
-y <- us_soc$soc
+long <- soc_dat$long
+lat <- soc_dat$lat
+y <- soc_dat$y
 
 library(verification)
 calculate_dist_between <- function(x){
@@ -627,10 +630,10 @@ crps <- function(prediction_matrix, true_value){
   return(-res)
 }
 
-pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/dnn_pred_soc.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Research/temp/dk_pred_soc.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Research/temp/ck_pred_soc.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Research/temp/inla_pred_soc.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dnn_pred_soc.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dk_pred_soc.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/ck_pred_soc.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/inla_pred_soc.csv"))
 
 
 
@@ -639,14 +642,14 @@ crps_dk_all <- crps(pred_dk,y)
 crps_ck_all <- crps(pred_ck,y)
 crps_inla_all <- crps(pred_inla,y)
 
-write.csv(crps_dnn_all,"D:/77/Research/temp/crps_dnn_soc.csv",row.names = FALSE)
-write.csv(crps_dk_all,"D:/77/Research/temp/crps_dk_soc.csv",row.names = FALSE)
-write.csv(crps_ck_all,"D:/77/Research/temp/crps_ck_soc.csv",row.names = FALSE)
+write.csv(crps_dnn_all,"D:/77/Research/temp/soc_pred/crps_dnn_soc.csv",row.names = FALSE)
+write.csv(crps_dk_all,"D:/77/Research/temp/soc_pred/crps_dk_soc.csv",row.names = FALSE)
+write.csv(crps_ck_all,"D:/77/Research/temp/soc_pred/crps_ck_soc.csv",row.names = FALSE)
 write.csv(crps_inla_all,"D:/77/Research/temp/crps_inla_soc.csv",row.names = FALSE)
 
-crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/crps_dnn_soc.csv"))
-crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/crps_dk_soc.csv"))
-crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/crps_ck_soc.csv"))
+crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_dnn_soc.csv"))
+crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_dk_soc.csv"))
+crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_ck_soc.csv"))
 crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/crps_inla_soc.csv"))
 
 print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
@@ -692,10 +695,10 @@ int_score_ck <- all_interval_score(prediction_sample = pred_ck, true_x = y)
 int_score_inla <- all_interval_score(prediction_sample = pred_inla, true_x = y)
 
 
-# write.csv(int_score_dnn,"D:/77/Research/temp/int_dnn_soc.csv",row.names = FALSE)
-# write.csv(int_score_dk,"D:/77/Research/temp/int_dk_soc.csv",row.names = FALSE)
-# write.csv(int_score_ck,"D:/77/Research/temp/int_ck_soc.csv",row.names = FALSE)
-# write.csv(int_score_inla,"D:/77/Research/temp/int_inla_soc.csv",row.names = FALSE)
+write.csv(int_score_dnn,"D:/77/Research/temp/soc_pred/int_dnn_soc.csv",row.names = FALSE)
+write.csv(int_score_dk,"D:/77/Research/temp/soc_pred/int_dk_soc.csv",row.names = FALSE)
+write.csv(int_score_ck,"D:/77/Research/temp/soc_pred/int_ck_soc.csv",row.names = FALSE)
+write.csv(int_score_inla,"D:/77/Research/temp/soc_pred/int_inla_soc.csv",row.names = FALSE)
 
 
 print(paste("Interval Score of DNN is: ", mean(int_score_dnn)))
