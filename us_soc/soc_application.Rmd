@@ -28,7 +28,7 @@ min_max_scale <- function(x)
   
 }
 
-us_soc <- na.omit(read.csv(here::here("us_soc/soc_2.csv")))
+us_soc <- read.csv(here::here("us_soc/soc_2.csv"))
 long <- us_soc$long
 lat <- us_soc$lat
 y <- us_soc$soc
@@ -561,7 +561,7 @@ p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  family= 'gaussian', quantiles = NULL,
                  control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                 control.inla = list(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                  verbose = FALSE)
 
 index.pred<-inla.stack.index(stk.full, "pred")$data
