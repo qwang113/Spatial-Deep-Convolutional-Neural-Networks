@@ -452,6 +452,8 @@ pred_inla_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
 # ml_idx <- sample(1:length(long), 2000)
 # ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,min(abs(diff(long)))))
 
+
+
 inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 10
 
 for (curr_index in 1:num_fold) {
