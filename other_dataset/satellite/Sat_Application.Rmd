@@ -409,7 +409,7 @@ model_ck %>% compile(
   save_best_only = TRUE,
   monitor = "val_loss",
   mode = "min",
-  verbose = 1
+  verbose = 0
 )
 
 mod_train_ck <- model_ck %>% fit(
@@ -446,7 +446,8 @@ library(INLA)
 library(rSPDE)
 library(gridExtra)
 library(lattice)
-
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_inla_g <- matrix(NA, nrow = grid_res^2, ncol = num_sample)
 # 
 # ml_idx <- sample(1:length(long), 2000)
 # ml_res <- likfit(coords = cbind(long[ml_idx], lat[ml_idx]), data = y[ml_idx], ini.cov.pars = c(var(y)/2,min(abs(diff(long)))))
@@ -565,7 +566,7 @@ p.res.pred<-inla(formula0, data=inla.stack.data(stk.full,spde=spde),
                  family= 'gaussian', quantiles = NULL,
                  control.predictor=list(link = 1, A=inla.stack.A(stk.full),compute=TRUE),  #compute gives you the marginals of the linear predictor
                  control.compute = list(config = TRUE), #model diagnostics and config = TRUE gives you the GMRF
-                 control.inla(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
+                 control.inla = list(strategy = 'simplified.laplace', huge = TRUE),  #this is to make it run faster
                  verbose = FALSE)
 
 index.pred<-inla.stack.index(stk.full, "pred")$data
