@@ -235,7 +235,7 @@ for (curr_index in 1:num_fold) {
   
   
   mod_train_dk <- model_dk %>%
-    fit(x = x_tr, y = y_tr, epochs =500, batch_size = 1000, 
+    fit(x = x_tr, y = y_tr, epochs =1000, batch_size = 1000, 
         validation_data = list(x_te, y_te) , callbacks = model_checkpoint)
   
   
@@ -352,7 +352,7 @@ for (curr_index in 1:num_fold) {
   mod_train_ck <- model_ck %>% fit(
     x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr),
     y = y[train_index],
-    epochs=500,
+    epochs=1000,
     batch_size=1000,
     validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_te), y[-train_index]),
     callbacks = model_checkpoint, shuffle = TRUE
@@ -383,7 +383,7 @@ library(geoR)
 
 
 inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
-mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(inla_range, inla_range*2))
+
 for (curr_index in 1:num_fold) {
   train_index_temp <- which(train_index_all != curr_index)
   train_index <- train_index_temp[!(train_index_temp %in% test_area_index)]
@@ -395,7 +395,7 @@ for (curr_index in 1:num_fold) {
   
   
   non_convex_bdry <- inla.nonconvex.hull(coords, -0.3, resolution = c(100, 100))
-  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(ml_res$phi*0.1, ml_res$phi*1.1))
+  mesh4 <- inla.mesh.2d(boundary = non_convex_bdry, max.edge=c(inla_range, inla_range*2))
   
   
   
@@ -472,9 +472,9 @@ for (curr_index in 1:num_fold) {
 }
 
 
-write.csv(as.data.frame(pred_empty_area_dnn),"D:/77/Reasearch/temp/eh_pred/dnn_pred_empty_area_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_empty_area_dk),"D:/77/Reasearch/temp/eh_pred/dk_pred_empty_area_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_empty_area_ck),"D:/77/Reasearch/temp/eh_pred/ck_pred_empty_area_eh.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_empty_area_inla),"D:/77/Reasearch/temp/eh_pred/inla_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_dnn),"D:/77/Research/temp/eh_pred/dnn_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_dk),"D:/77/Research/temp/eh_pred/dk_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_ck),"D:/77/Research/temp/eh_pred/ck_pred_empty_area_eh.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_empty_area_inla),"D:/77/Research/temp/eh_pred/inla_pred_empty_area_eh.csv",row.names = FALSE)
 
 
