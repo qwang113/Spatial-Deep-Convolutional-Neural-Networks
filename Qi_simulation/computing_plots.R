@@ -20,7 +20,6 @@ int_score_dk <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_dk_eh.csv")$x, 
 int_score_ck <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_ck_eh.csv")$x, ncol = 1)
 int_score_inla <- matrix(read.csv("D:/77/Research/temp/eh_pred/int_inla_eh.csv")$x, ncol = 1)
 
-loss_all <- as.matrix(read.csv(here::here("Qi_simulation/eh_loss.csv")))
 
 sim_size = 300
 
@@ -79,7 +78,7 @@ pred_sur_dnn <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, mean))) +
   scale_fill_viridis_c() + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Mean Prediction Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(base) Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -87,7 +86,7 @@ pred_sur_dk <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dk, 1, mean))) +
   scale_fill_viridis_c() + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Deep Kriging Mean Prediction Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(basis) Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -95,7 +94,7 @@ pred_sur_ck <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_ck, 1, mean))) +
   scale_fill_viridis_c() + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Convolutional Kriging Mean Prediction Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CNN(basis) Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -103,7 +102,7 @@ pred_sur_inla <-
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, mean))) +
   scale_fill_viridis_c() + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Posterior Mean Prediction Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Posterior Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 

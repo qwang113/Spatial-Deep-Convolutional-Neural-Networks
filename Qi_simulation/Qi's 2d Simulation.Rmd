@@ -517,6 +517,11 @@ write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/eh_pred/inla_pred_eh.csv
 # Prediction MSE
 
 ```{r}
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dnn_pred_eh.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dk_pred_eh.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/ck_pred_eh.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/inla_pred_eh.csv"))
+
 sim_size = 300
 long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
 
@@ -558,10 +563,7 @@ crps <- function(prediction_matrix, true_value){
   return(res)
 }
 
-pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dnn_pred_eh.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/dk_pred_eh.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/ck_pred_eh.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Research/temp/eh_pred/inla_pred_eh.csv"))
+
 
 
 

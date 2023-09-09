@@ -1,4 +1,3 @@
-
 icr_inla <- sum( y>apply(pred_inla, 1,quantile, 0.025) & y<apply(pred_inla, 1,quantile, 0.975) )/length(y)
 icr_dnn <- sum( y>apply(pred_dnn, 1,quantile, 0.025) & y<apply(pred_dnn, 1,quantile, 0.975) )/length(y)
 icr_dk <- sum( y>apply(pred_dk, 1,quantile, 0.025) & y<apply(pred_dk, 1,quantile, 0.975) )/length(y)
