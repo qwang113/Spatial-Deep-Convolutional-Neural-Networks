@@ -17,8 +17,8 @@ matrix(c(icr_inla, icr_dnn, icr_dk, icr_ck), nrow = 1)
 apply(cbind(int_score_inla,int_score_dnn,int_score_dk,int_score_ck),2, mean)
 )
 
-rownames(score_tab) <- c("MSE", "Negative CRPS", "ICR", "Interval Score")
-colnames(score_tab) <- c("INLA","Base DNN", "DK","CK")
+rownames(score_tab) <- c("MSE", "Negative CRPS", "ICR(0.95)", "Interval Score")
+colnames(score_tab) <- c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")
 
 
 xtable::xtable(t(round(score_tab,2)),aline = "c")

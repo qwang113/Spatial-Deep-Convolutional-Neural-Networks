@@ -121,7 +121,7 @@ sd_sur_dnn <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dnn, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN(base) Standard Deviation") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -129,7 +129,7 @@ sd_sur_dk <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_dk, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Deep Kriging Standard Deviation Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN(basis) Standard Deviation") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -137,7 +137,7 @@ sd_sur_ck <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_ck, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Convolutional Kriging Standard Deviation Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CNN(basis) Standard Deviation") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -145,14 +145,14 @@ sd_sur_inla <-
   ggplot() +
   geom_raster(aes(x = long, y = lat, fill = apply(pred_inla, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation Surface") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
 cowplot::plot_grid(sd_sur_inla, sd_sur_dnn, sd_sur_dk, sd_sur_ck)
 
 # uncertainty with empty block------------------------------------------------------------------
-
+test_area_index <- which(long >= 300/500 & long <=400/500 & lat >= -250/500 & lat <= 250/500 )
 
 upper_emp <- max(c(
   apply(pred_empty_area_dnn, 1, sd),
@@ -170,7 +170,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation Surface(Empty Block)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -182,7 +182,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DK Standard Deviation Surface(Empty Block)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DK Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -194,7 +194,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CK Standard Deviation Surface(Empty Block)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CK Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -206,7 +206,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Standard Deviation Surface(Empty Block)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -221,7 +221,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(base) Mean Prediction(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -233,7 +233,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DK Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(basis) Mean Prediction(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -245,7 +245,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CK Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CNN(basis) Mean Prediction(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -257,7 +257,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")  +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Standard Deviation Surface(Empty Block Added)") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Posterior Mean Prediction(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -269,11 +269,11 @@ library(ggforce)
 ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all))), 
        aes(x = variable, y = -value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_x_discrete(labels = c("INLA", "DNN", "DK","CK")) +
+  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN", "DK", "CK")) +
+                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
   labs(fill = "Model", y = "Negative CRPS") + 
-  facet_zoom(ylim = c(0,10)) +
+  facet_zoom(ylim = c(0,6)) +
   theme_classic()
 
 
@@ -282,11 +282,11 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps
 ggplot(data = reshape2::melt(as.data.frame(cbind(int_score_inla,int_score_dnn,int_score_dk, int_score_ck)))
        , aes(x = variable, y = value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_x_discrete(labels = c("INLA", "DNN", "DK","CK")) +
+  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN", "DK", "CK")) +
+                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
   labs(fill = "Model", y = "Interval Score") + 
-  facet_zoom(ylim = c(0,100)) +
+  facet_zoom(ylim = c(0,75)) +
   theme_classic()
 
 
