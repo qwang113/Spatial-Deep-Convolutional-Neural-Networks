@@ -15,11 +15,11 @@ g_lat <- expand.grid(grid_long,grid_lat)[,2]
 long <- mra_dat$long-180
 # Mean surface -----------------------------------------------------------------
 
-pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra.csv"))
-pred_dk <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra.csv"))
-pred_ck <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra.csv"))
-pred_inla <- as.matrix(read.csv("D:/77/Research/temp/mra_pred//inla_pred_mra.csv"))
-loss_mse <- read.csv(here::here("other_dataset/mra_reproduce/mra_loss.csv"))
+
+# pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra.csv"))
+# pred_dk <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra.csv"))
+# pred_ck <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra.csv"))
+# pred_inla <- as.matrix(read.csv("D:/77/Research/temp/mra_pred//inla_pred_mra.csv"))
 
 pred_dnn_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra_g.csv"))
 pred_dk_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra_g.csv"))
@@ -36,22 +36,19 @@ int_score_dk <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_dk_mra.csv")$x
 int_score_ck <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_ck_mra.csv")$x, ncol = 1)
 int_score_inla <- matrix(read.csv("D:/77/Research/temp/mra_pred/int_inla_mra.csv")$x, ncol = 1)
 
-loss_all <- as.matrix(read.csv(here::here("other_dataset/mra_reproduce/loss_mra.csv")))
-
 rg <- range(c(pred_dnn_g, pred_dk_g, pred_ck_g, pred_inla_g))
 rg[1] <- -5
 
 # Observations ---------------------------------------------------------------
 borders <- map_data("world")
-ggplot() + theme_bw() + 
-  theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=long,y=lat,colour=y),size=1.5,shape=19) + 
-  scale_colour_gradientn(colours = terrain.colors(101),limits=rg) +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
-  scale_x_continuous(limits=range(long),expand=c(0,0)) + 
-  scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "Observations for TPW Dataset") + 
+  ggplot() +
+  geom_raster(aes(x = long, y = lat, fill = y)) +
+  scale_fill_viridis_c(limits = c(min(y), max(y))) +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Observation Surface") +
+  theme_bw() +
   theme(plot.title = element_text(hjust = 0.5)) 
+  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") 
+
 
 
 
@@ -64,7 +61,7 @@ pred_sur_dnn <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DNN Prediction for TPW Dataset") + 
+  labs(x = "Longitude", y = "Latitude", title = "DNN(base) Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 pred_sur_dk <-
@@ -75,7 +72,7 @@ pred_sur_dk <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DK Prediction for TPW Dataset") + 
+  labs(x = "Longitude", y = "Latitude", title = "DNN(basis) Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 pred_sur_ck <-
@@ -86,7 +83,7 @@ pred_sur_ck <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "CK Prediction for TPW Dataset") + 
+  labs(x = "Longitude", y = "Latitude", title = "CNN(basis) Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 pred_sur_inla <-
@@ -97,7 +94,7 @@ pred_sur_inla <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "INLA Prediction for TPW Dataset") + 
+  labs(x = "Longitude", y = "Latitude", title = "INLA Posterior Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 cowplot::plot_grid(pred_sur_inla, pred_sur_dnn, pred_sur_dk, pred_sur_ck)
@@ -117,7 +114,7 @@ sd_sur_dnn <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DNN Standard Deviation Surface") + 
+  labs(x = "Longitude", y = "Latitude", title = "DNN(base) Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 sd_sur_dk <-
@@ -128,7 +125,7 @@ sd_sur_dk <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DK Standard Deviation Surface") + 
+  labs(x = "Longitude", y = "Latitude", title = "DNN(basis) Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 sd_sur_ck <-
@@ -139,7 +136,7 @@ sd_sur_ck <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "CK Standard Deviation Surface") + 
+  labs(x = "Longitude", y = "Latitude", title = "CNN(basis) Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 sd_sur_inla <-
@@ -150,7 +147,7 @@ sd_sur_inla <-
   geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
   scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "INLA Standard Deviation Surface") + 
+  labs(x = "Longitude", y = "Latitude", title = "INLA Posterior Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 cowplot::plot_grid(sd_sur_inla, sd_sur_dnn, sd_sur_dk, sd_sur_ck)
@@ -163,12 +160,12 @@ library(ggforce)
 ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all))), 
        aes(x = variable, y = -value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_y_continuous(limits = c(0,15)) +
-  scale_x_discrete(labels = c("INLA", "DNN", "DK","CK")) +
+  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN", "DK", "CK")) +
+                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
   labs(fill = "Model", y = "Negative CRPS") + 
-  facet_zoom(ylim = c(0,2)) +
+  facet_zoom(ylim = c(0,1.5)) +
+  guides(fill = "none")+
   theme_classic()
 
 
@@ -177,11 +174,12 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps
 ggplot(data = reshape2::melt(as.data.frame(cbind(int_score_inla,int_score_dnn,int_score_dk, int_score_ck)))
        , aes(x = variable, y = value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_y_continuous(limits = c(0,500)) +
-  scale_x_discrete(labels = c("INLA", "DNN", "DK","CK")) +
+  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN", "DK", "CK")) +
+                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
   labs(fill = "Model", y = "Interval Score") + 
-  facet_zoom(ylim = c(0,65)) +
+  facet_zoom(ylim = c(0,10)) +
+  guides(fill = "none")+
   theme_classic()
+
 
