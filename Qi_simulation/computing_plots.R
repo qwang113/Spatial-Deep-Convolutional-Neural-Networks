@@ -170,7 +170,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN Standard Deviation(Block Subtracted)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN(base) Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -182,7 +182,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DK Standard Deviation(Block Subtracted)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN(basis) Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -194,7 +194,7 @@ ggplot() +
   geom_line(aes(x = c(min(long[test_area_index]),max(long[test_area_index]) + unique(diff(long))[1]),y = c(max(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CK Standard Deviation(Block Subtracted)") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CNN(basis) Standard Deviation(Block Subtracted)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
 
