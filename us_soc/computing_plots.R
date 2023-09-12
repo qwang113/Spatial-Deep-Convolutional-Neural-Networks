@@ -19,10 +19,10 @@ g_lat <- expand.grid(grid_long,grid_lat)[,2]
 # Mean surface -----------------------------------------------------------------
 
 
-# pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dnn_pred_soc.csv"))
-# pred_dk <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dk_pred_soc.csv"))
-# pred_ck <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/ck_pred_soc.csv"))
-# pred_inla <- as.matrix(read.csv("D:/77/Research/temp/soc_pred//inla_pred_soc.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dnn_pred_soc.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dk_pred_soc.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/ck_pred_soc.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/soc_pred//inla_pred_soc.csv"))
 
 pred_dnn_g <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dnn_pred_soc_g.csv"))
 pred_dk_g <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/dk_pred_soc_g.csv"))

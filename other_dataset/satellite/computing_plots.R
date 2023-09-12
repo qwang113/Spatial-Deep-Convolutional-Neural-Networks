@@ -1,5 +1,5 @@
 library(ggplot2)
-
+grid_res = 200
 load(here::here("other_dataset/satellite/AllSatelliteTemps.RData"))
 sat_dat <- na.omit(all.sat.temps[,c(1,2,4)])
 colnames(sat_dat) <- c("long","lat", "y")
@@ -45,12 +45,19 @@ int_score_ck <- matrix(read.csv("D:/77/Research/temp/sat_pred/int_ck_sat.csv")$x
 int_score_inla <- matrix(read.csv("D:/77/Research/temp/sat_pred/int_inla_sat.csv")$x, ncol = 1)
 
 
+rg <- range(c(
+  apply(pred_dnn_g, 1, mean),
+  apply(pred_dk_g, 1, mean),
+  apply(pred_ck_g, 1, mean),
+  apply(pred_inla_g, 1, mean)
+))
+
 
 # mean -------------------------------------------------------------------------------------
 pred_sur_dnn <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_dnn_g, 1, mean))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = rg) + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(base) Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -58,7 +65,7 @@ pred_sur_dnn <-
 pred_sur_dk <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_dk_g, 1, mean))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = rg) + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(basis) Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -66,7 +73,7 @@ pred_sur_dk <-
 pred_sur_ck <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_ck_g, 1, mean))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = rg) + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CNN(basis) Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -74,7 +81,7 @@ pred_sur_ck <-
 pred_sur_inla <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_inla_g, 1, mean))) +
-  scale_fill_viridis_c() + 
+  scale_fill_viridis_c(limits = rg) + 
   labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Posterior Mean Prediction") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -84,10 +91,10 @@ cowplot::plot_grid(pred_sur_inla, pred_sur_dnn, pred_sur_dk, pred_sur_ck)
 # uncertainty --------------------------------------------------------------------------------
 
 upper <- max(c(
-  apply(pred_dnn, 1, sd),
-  apply(pred_dk, 1, sd),
-  apply(pred_ck, 1, sd),
-  apply(pred_inla, 1, sd)
+  apply(pred_dnn_g, 1, sd),
+  apply(pred_dk_g, 1, sd),
+  apply(pred_ck_g, 1, sd),
+  apply(pred_inla_g, 1, sd)
 )) 
 
 sd_sur_dnn <-

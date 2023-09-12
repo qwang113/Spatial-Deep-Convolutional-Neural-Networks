@@ -1,6 +1,6 @@
-library(ggplot2)
-mra_dat <- unique(read.csv(here::here("other_dataset/mra_reproduce/MIRSmra.csv"), header = F))
+mra_dat <- unique(read.csv(here::here("other_dataset/mra_reproduce/MIRSmra.csv"),header = F))
 colnames(mra_dat) <- c("long","lat","y")
+mra_dat <- aggregate(y~long + lat, data = mra_dat, FUN = mean)
 long <- mra_dat$long
 lat <- mra_dat$lat
 y <- mra_dat$y
@@ -16,10 +16,10 @@ long <- mra_dat$long-180
 # Mean surface -----------------------------------------------------------------
 
 
-# pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra.csv"))
-# pred_dk <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra.csv"))
-# pred_ck <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra.csv"))
-# pred_inla <- as.matrix(read.csv("D:/77/Research/temp/mra_pred//inla_pred_mra.csv"))
+pred_dnn <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra.csv"))
+pred_dk <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra.csv"))
+pred_ck <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/ck_pred_mra.csv"))
+pred_inla <- as.matrix(read.csv("D:/77/Research/temp/mra_pred//inla_pred_mra.csv"))
 
 pred_dnn_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dnn_pred_mra_g.csv"))
 pred_dk_g <- as.matrix(read.csv("D:/77/Research/temp/mra_pred/dk_pred_mra_g.csv"))
