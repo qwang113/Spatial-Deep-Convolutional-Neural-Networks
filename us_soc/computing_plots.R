@@ -42,7 +42,6 @@ int_score_inla <- matrix(read.csv("D:/77/Research/temp/soc_pred/int_inla_soc.csv
 rg = c(min(y)- sd(y),max(y)+sd(y))
 
 # Observations ---------------------------------------------------------------
-borders <- map_data("world")[which( map_data("world")$region=="USA" ),]
 
 obs_sur <-
   ggplot() + theme_bw() + 
@@ -59,57 +58,66 @@ obs_sur <-
 
 
 # mean -------------------------------------------------------------------------------------
+
+us_map <- map_data("usa")
+tem = spBayes::pointsInPoly(as.matrix(map_data("usa", region = "main")[,1:2]),cbind(g_long, g_lat))
+
+
 pred_sur_dnn <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_dnn_g,1,mean)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_dnn_g,1,mean)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "DNN(base) Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5))  +
+  coord_fixed(ratio = 1.1) +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))
 
 pred_sur_dk <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_dk_g,1,mean)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_dk_g,1,mean)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "DNN(basis) Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50)) +
+  coord_fixed(ratio = 1.1)
 
 pred_sur_ck <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_ck_g,1,mean)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_ck_g,1,mean)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "CNN(basis) Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50))+
+  coord_fixed(ratio = 1.1)
 
 pred_sur_inla <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_inla_g,1,mean)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_inla_g,1,mean)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "INLA Posterior Mean Prediction") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50))+
+  coord_fixed(ratio = 1.1)
 
 cowplot::plot_grid(pred_sur_inla, pred_sur_dnn, pred_sur_dk, pred_sur_ck)
 
@@ -123,54 +131,58 @@ rg <- c(0,20)
 sd_sur_dnn <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_dnn_g,1,sd)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_dnn_g,1,sd)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "DNN(base) Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50))+
+  coord_fixed(ratio = 1.1)
 
 sd_sur_dk <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_dk_g,1,sd)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_dk_g,1,sd)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "DNN(basis) Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50))+
+  coord_fixed(ratio = 1.1)
 
 sd_sur_ck <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_ck_g,1,sd)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_ck_g,1,sd)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "CNN(basis) Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50))+
+  coord_fixed(ratio = 1.1)
 
 sd_sur_inla <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=g_long,y=g_lat,colour=apply(pred_inla_g,1,sd)),size=1.5,shape=19) + 
+  geom_point(aes(x=g_long[tem],y=g_lat[tem],colour=apply(pred_inla_g,1,sd)[tem]),size=1.5,shape=19) + 
   scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "white") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
   labs(x = "Longitude", y = "Latitude", title = "INLA Posterior Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
-  ylim(c(25, 50))
+  ylim(c(25, 50))+
+  coord_fixed(ratio = 1.1)
 
 cowplot::plot_grid(sd_sur_inla, sd_sur_dnn, sd_sur_dk, sd_sur_ck)
 
