@@ -543,15 +543,15 @@ for (curr_index in 1:num_fold) {
 # 
 # Prediction for grid
 # Prediction for grid
-Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat))))
+Aprediction <- inla.spde.make.A(mesh = mesh4, loc = cbind(g_long, g_lat))
 
 stk.pred <- inla.stack(data=list(y=NA),
                        A=list(Aprediction,1),
                        effects=list(c(list(Intercept=1)
                                       ,iset),
                                     list(
-                                      long = (g_long- min(long))/diff(range(long)),
-                                      lat = (g_lat - min(lat))/diff(range(lat))
+                                      long = g_long,
+                                      lat = g_lat
                                     )
                        ),
                        tag='pred')
@@ -645,12 +645,12 @@ crps_inla_all <- crps(pred_inla,y)
 write.csv(crps_dnn_all,"D:/77/Research/temp/soc_pred/crps_dnn_soc.csv",row.names = FALSE)
 write.csv(crps_dk_all,"D:/77/Research/temp/soc_pred/crps_dk_soc.csv",row.names = FALSE)
 write.csv(crps_ck_all,"D:/77/Research/temp/soc_pred/crps_ck_soc.csv",row.names = FALSE)
-write.csv(crps_inla_all,"D:/77/Research/temp/crps_inla_soc.csv",row.names = FALSE)
+write.csv(crps_inla_all,"D:/77/Research/temp/soc_pred/crps_inla_soc.csv",row.names = FALSE)
 
 crps_dnn_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_dnn_soc.csv"))
 crps_dk_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_dk_soc.csv"))
 crps_ck_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_ck_soc.csv"))
-crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/crps_inla_soc.csv"))
+crps_inla_all <- as.matrix(read.csv("D:/77/Research/temp/soc_pred/crps_inla_soc.csv"))
 
 print(paste("CRPS of DNN is: ", mean(crps_dnn_all)))
 print(paste("CRPS of DK is: ", mean(crps_dk_all)))

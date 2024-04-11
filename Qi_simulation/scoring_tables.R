@@ -3,6 +3,11 @@ icr_dnn <- sum( y>apply(pred_dnn, 1,quantile, 0.025) & y<apply(pred_dnn, 1,quant
 icr_dk <- sum( y>apply(pred_dk, 1,quantile, 0.025) & y<apply(pred_dk, 1,quantile, 0.975) )/length(y)
 icr_ck <- sum( y>apply(pred_ck, 1,quantile, 0.025) & y<apply(pred_ck, 1,quantile, 0.975) )/length(y)
 
+inla_mse <- (apply(pred_inla, 1, mean) - y)^2
+dnn_mse <- (apply(pred_dnn, 1, mean) - y)^2
+dk_mse <- (apply(pred_dk, 1, mean) - y)^2
+ck_mse <- (apply(pred_ck, 1, mean) - y)^2
+
 
 
 score_tab <- 
@@ -10,7 +15,7 @@ rbind(
   
   apply(cbind(inla_mse,dnn_mse,dk_mse,ck_mse),2, mean)
 ,
--apply(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all),2, mean)
+apply(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all),2, mean)
 ,
 matrix(c(icr_inla, icr_dnn, icr_dk, icr_ck), nrow = 1)
 ,

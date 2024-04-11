@@ -51,6 +51,7 @@ ggplot() +
 
 
 # EH Shape ---------------------------------------------------------------------------
+test_area_index <- which(long >= 300/500 & long <=400/500 & lat >= -250/500 & lat <= 250/500 )
 obs_sur <- 
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = y)) +
@@ -71,7 +72,7 @@ obs_sur_emp <-
   geom_line(aes(x = c(min(long[test_area_index]),min(long[test_area_index])),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed") +
   geom_line(aes(x = c(max(long[test_area_index]) + unique(diff(long))[1],max(long[test_area_index]) + unique(diff(long))[1]),y = c(min(lat[test_area_index]),max(lat[test_area_index]))), color = "red", linewidth = 1, linetype = "dashed")
 
-
+cowplot::plot_grid(obs_sur,obs_sur_emp) 
 
 # mean -------------------------------------------------------------------------------------
 pred_sur_dnn <-
