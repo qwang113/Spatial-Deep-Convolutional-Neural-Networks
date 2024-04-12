@@ -158,5 +158,5 @@ for (curr_index in 1:num_fold) {
   pred_inla[te_idx, ] <- t(matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample))
 }
 
-mean((apply(pred_inla, 1 , mean) - y[-tr_idx])^2)
+mean((apply(pred_inla, 1 , mean) - y)^2)
 write.csv(pred_inla,"D:/77/Research/temp/eh_pred/inla_pred_eh.csv", row.names = FALSE)

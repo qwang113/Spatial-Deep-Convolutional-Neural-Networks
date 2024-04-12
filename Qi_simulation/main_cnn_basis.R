@@ -215,7 +215,7 @@ for (curr_index in 1:num_fold) {
     x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr_tr),
     y = y[tr_idx[train_index]],
     epochs=1000,
-    batch_size=2000,
+    batch_size=1000,
     validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_tr_va), y[tr_idx[-train_index]]),
     callbacks = model_checkpoint, shuffle = TRUE
   )
