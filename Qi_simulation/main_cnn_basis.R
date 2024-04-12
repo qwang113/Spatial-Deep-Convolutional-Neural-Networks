@@ -230,5 +230,5 @@ for (curr_index in 1:num_fold) {
 }
 
 # Check prediction MSE
-mean((apply(pred_ck, 2 , mean) - y)^2)
-saveRDS(pred_ck,"D:/77/Research/temp/eh_pred/ck_pred_eh.rds")
+mean((apply(pred_ck, 1 , mean) - y)^2)
+write.csv(pred_ck,"D:/77/Research/temp/eh_pred/ck_pred_eh.csv", row.names = FALSE)

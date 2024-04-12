@@ -181,4 +181,4 @@ for (curr_index in 1:num_fold) {
 }
 
 mean((apply(pred_dk, 1 , mean) - y)^2)
-saveRDS(pred_dk,"D:/77/Research/temp/eh_pred/dk_pred_eh.rds")
+write.csv(pred_dk,"D:/77/Research/temp/eh_pred/dk_pred_eh.csv", row.names = FALSE)

@@ -179,4 +179,4 @@ for (curr_index in 1:num_fold) {
 # Check prediction MSE
 mean((apply(pred_dnn, 1 , mean) - y)^2)
 
-saveRDS(pred_dnn,"D:/77/Research/temp/eh_pred/dnn_pred_eh.rds")
+write.csv(pred_dnn,"D:/77/Research/temp/eh_pred/dnn_pred_eh.csv", row.names = FALSE)
