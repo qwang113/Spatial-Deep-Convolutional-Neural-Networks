@@ -42,11 +42,10 @@ num_sample <- 100
 pred_drop <- 0.1
 num_fold <- 5
 
-# pred_dnn <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
-pred_dk <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
+# pred_dnn <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 # pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
 # pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
-
 # Basis Generating
 
 gridbasis1 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 1, type = "Gaussian", regular = 1)
@@ -111,15 +110,14 @@ pred_drop_layer <- layer_dropout(rate=pred_drop)
 #DNN
 
 set.seed(0)
-eh_dat <- data.frame(long = long, lat = lat, y = y)  
-tr_idx <- sample(1:nrow(eh_dat),floor(nrow(eh_dat)*0.9))
-eh_tr <- eh_dat[tr_idx,]
-eh_te <- eh_dat[-tr_idx,]
 
-train_index_all <- sample(1:num_fold, nrow(eh_tr), replace = T)
+fold_number <- sample(1:num_fold,nrow(eh_dat), replace = TRUE)
+
 for (curr_index in 1:num_fold) {
+  tr_idx <- which(fold_number != curr_index)
+  te_idx <- which(fold_number == curr_index)
   
-  train_index <- which(train_index_all != curr_index)
+  train_index <- sample(1:length(tr_idx), floor(0.9*length(tr_idx)))
   basis_tr_1  <- basis_1[tr_idx[train_index],]
   basis_te_1  <- basis_1[tr_idx[-train_index],]
   
@@ -178,9 +176,9 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_dk[j, curr_index, ] <- predict(model_dk,  cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-tr_idx,], basis_1[-tr_idx,], basis_2[-tr_idx,], basis_3[-tr_idx,]))
+    pred_dk[te_idx, ] <- predict(model_dk,  cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-tr_idx,], basis_1[-tr_idx,], basis_2[-tr_idx,], basis_3[-tr_idx,]))
   }
 }
 
-mean((apply(pred_dk[,1,], 2 , mean) - y[-tr_idx])^2)
+mean((apply(pred_dk, 1 , mean) - y)^2)
 saveRDS(pred_dk,"D:/77/Research/temp/eh_pred/dk_pred_eh.rds")

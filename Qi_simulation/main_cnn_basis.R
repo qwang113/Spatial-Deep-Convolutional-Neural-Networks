@@ -44,8 +44,8 @@ num_fold <- 5
 
 # pred_dnn <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
 # pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_ck <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
-# pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+# pred_ck <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
 # Basis Generating
 
@@ -110,16 +110,15 @@ pred_drop_layer <- layer_dropout(rate=pred_drop)
 
 #DNN
 set.seed(0)
-eh_dat <- data.frame(long = long, lat = lat, y = y)  
-tr_idx <- sample(1:nrow(eh_dat),floor(nrow(eh_dat)*0.9))
-eh_tr <- eh_dat[tr_idx,]
-eh_te <- eh_dat[-tr_idx,]
-
-train_index_all <- sample(1:num_fold, nrow(eh_tr), replace = T)
+fold_number <- sample(1:num_fold,nrow(eh_dat), replace = TRUE)
 
 for (curr_index in 1:num_fold) {
   
-  train_index <- which(train_index_all != curr_index)
+  tr_idx <- which(fold_number != curr_index)
+  te_idx <- which(fold_number == curr_index)
+  
+  train_index <- sample(1:length(tr_idx), floor(0.9*length(tr_idx)))
+  
   basis_tr_1 <- array_reshape(basis_arr_1[tr_idx[train_index],,], c(length(tr_idx[train_index]), shape_row_1, shape_col_1, 1))
   basis_tr_2 <- array_reshape(basis_arr_2[tr_idx[train_index],,], c(length(tr_idx[train_index]), shape_row_2, shape_col_2, 1))
   basis_tr_3 <- array_reshape(basis_arr_3[tr_idx[train_index],,], c(length(tr_idx[train_index]), shape_row_3, shape_col_3, 1))
@@ -225,11 +224,11 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_ck[j, curr_index,] <- predict(model_ck, list(basis_TE_1,basis_TE_2,basis_TE_3,cov_TE))
+    pred_ck[j,] <- predict(model_ck, list(basis_TE_1,basis_TE_2,basis_TE_3,cov_TE))
   }
   
 }
 
 # Check prediction MSE
-mean((apply(pred_ck[,1,], 2 , mean) - y[-tr_idx])^2)
+mean((apply(pred_ck, 2 , mean) - y)^2)
 saveRDS(pred_ck,"D:/77/Research/temp/eh_pred/ck_pred_eh.rds")

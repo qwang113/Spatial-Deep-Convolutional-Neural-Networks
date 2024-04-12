@@ -45,7 +45,7 @@ num_fold <- 5
 # pred_dnn <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
 # pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
 # pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
-pred_inla <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
+pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
 # Basis Generating
 library(INLA)
@@ -65,14 +65,14 @@ lat_s <- scale(lat)
 inla_range <- min( diff(range(long)), diff(range(lat)) ) / sqrt(length(long)) * 5
 
 set.seed(0)
-eh_dat <- data.frame(long = long, lat = lat, y = y)  
-tr_idx <- sample(1:nrow(eh_dat),floor(nrow(eh_dat)*0.9))
-eh_tr <- eh_dat[tr_idx,]
-eh_te <- eh_dat[-tr_idx,]
-train_index_all <- sample(1:num_fold, nrow(eh_tr), replace = T)
+
+fold_number <- sample(1:num_fold,nrow(eh_dat), replace = TRUE)
+
 for (curr_index in 1:num_fold) {
   
-  train_index <- which(train_index_all != curr_index)
+  tr_idx <- which(fold_number != curr_index)
+  te_idx <- which(fold_number == curr_index)
+  train_index <- sample(1:length(tr_idx), floor(0.9*length(tr_idx)))
   
   long_tr <- long[tr_idx[train_index]]
   lat_tr <- lat[tr_idx[train_index]]
@@ -155,7 +155,7 @@ for (curr_index in 1:num_fold) {
   
   # <- inla.posterior.sample(n = num_sample, p.res.pred)
   temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
-  pred_inla[ , curr_index, ] <- t(matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample))
+  pred_inla[te_idx, ] <- t(matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample))
 }
 
 mean((apply(pred_inla[,1,], 2 , mean) - y[-tr_idx])^2)
