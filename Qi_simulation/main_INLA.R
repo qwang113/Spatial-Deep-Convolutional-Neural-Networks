@@ -121,8 +121,7 @@ for (curr_index in 1:num_fold) {
   
   long_te <- long[-tr_idx]
   lat_te <- lat[-tr_idx]
-  y_te <- y[-tr_idx]
-  
+
   
   test_coords <- cbind(long_te, lat_te)
   
@@ -155,8 +154,8 @@ for (curr_index in 1:num_fold) {
   
   # <- inla.posterior.sample(n = num_sample, p.res.pred)
   temp_pos_sample <- inla.posterior.sample(num_sample,p.res.pred)
-  pred_inla[te_idx, ] <- t(matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample))
+  pred_inla[te_idx, ] <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pred]), ncol = num_sample)
 }
 
-mean((apply(pred_inla[,1,], 2 , mean) - y[-tr_idx])^2)
+mean((apply(pred_inla, 1 , mean) - y)^2)
 saveRDS(pred_inla,"D:/77/Research/temp/eh_pred/inla_pred_eh.rds")
