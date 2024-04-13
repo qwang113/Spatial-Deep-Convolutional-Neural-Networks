@@ -267,6 +267,6 @@ for (curr_index in 1:num_fold) {
 }
 
 # Check prediction MSE
-mean((apply(pred_ck, 2 , mean) - y[-tr_idx])^2)
+mean((apply(pred_ck, 1 , mean) - y[-tr_idx])^2)
 saveRDS(pred_ck,"D:/77/Research/temp/sat_pred/ck_pred_sat.rds")
 saveRDS(pred_ck,"D:/77/Research/temp/sat_pred/ck_pred_sat_g.rds")
