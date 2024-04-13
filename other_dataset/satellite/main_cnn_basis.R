@@ -36,8 +36,8 @@ min_max_scale <- function(x)
 }
 
 
-pred_ck <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
-pred_ck_g <- array(NA, dim = c(num_sample, num_fold, grid_res^2))
+pred_ck <-  matrix(NA, nrow = length(y), ncol = num_sample)
+pred_ck_g <-  matrix(NA, nrow = grid_res^2, ncol = num_sample)
 
 grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
 grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
@@ -145,15 +145,15 @@ pred_drop_layer <- layer_dropout(rate=pred_drop)
 #CNN
 set.seed(0)
 sat_dat <- data.frame(long = long, lat = lat, y = y)  
-tr_idx <- sample(1:nrow(sat_dat),ceiling(nrow(sat_dat)*0.9))
-sat_tr <- sat_dat[tr_idx,]
-sat_te <- sat_dat[-tr_idx,]
-
-train_index_all <- sample(1:num_fold, nrow(sat_tr), replace = T)
+fold_number <- sample(1:num_fold,nrow(sat_dat), replace = TRUE)
+train_index_all <- sample(1:num_fold, nrow(sat_dat), replace = T)
 
 for (curr_index in 1:num_fold) {
   
-  train_index <- which(train_index_all != curr_index)
+  tr_idx <- which(fold_number != curr_index)
+  te_idx <- which(fold_number == curr_index)
+  train_index <- sample(1:length(tr_idx), floor(0.9*length(tr_idx)))
+  
   basis_tr_1 <- array_reshape(basis_arr_1[tr_idx[train_index],,], c(length(tr_idx[train_index]), shape_row_1, shape_col_1, 1))
   basis_tr_2 <- array_reshape(basis_arr_2[tr_idx[train_index],,], c(length(tr_idx[train_index]), shape_row_2, shape_col_2, 1))
   basis_tr_3 <- array_reshape(basis_arr_3[tr_idx[train_index],,], c(length(tr_idx[train_index]), shape_row_3, shape_col_3, 1))
@@ -259,14 +259,14 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_ck[j, curr_index,] <- predict(model_ck, list(basis_TE_1,basis_TE_2,basis_TE_3,cov_TE))
-    pred_ck_g[j, curr_index,] <- predict(model_ck, list(basis_arr_1_g, basis_arr_2_g, basis_arr_3_g,
+    pred_ck[te_idx,j] <- predict(model_ck, list(basis_TE_1,basis_TE_2,basis_TE_3,cov_TE))
+    pred_ck_g[,j] <- predict(model_ck, list(basis_arr_1_g, basis_arr_2_g, basis_arr_3_g,
                       cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)))))
   }
   
 }
 
 # Check prediction MSE
-mean((apply(pred_ck[,1,], 2 , mean) - y[-tr_idx])^2)
+mean((apply(pred_ck, 2 , mean) - y[-tr_idx])^2)
 saveRDS(pred_ck,"D:/77/Research/temp/sat_pred/ck_pred_sat.rds")
 saveRDS(pred_ck,"D:/77/Research/temp/sat_pred/ck_pred_sat_g.rds")

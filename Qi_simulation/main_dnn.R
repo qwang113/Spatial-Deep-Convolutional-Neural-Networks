@@ -170,7 +170,7 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_dnn[te_idx,  ] <- predict(model_dnn, 
+    pred_dnn[te_idx,  j] <- predict(model_dnn, 
                                          as.matrix( cbind(min_max_scale(long),min_max_scale(lat))  )[-tr_idx,]
     )
   }

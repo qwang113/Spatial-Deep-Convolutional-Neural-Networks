@@ -185,7 +185,7 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_dk[te_idx, ] <- predict(model_dk,  cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-tr_idx,], basis_1[-tr_idx,], basis_2[-tr_idx,], basis_3[-tr_idx,]))
+    pred_dk[te_idx, j] <- predict(model_dk,  cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-tr_idx,], basis_1[-tr_idx,], basis_2[-tr_idx,], basis_3[-tr_idx,]))
   }
 }
 
