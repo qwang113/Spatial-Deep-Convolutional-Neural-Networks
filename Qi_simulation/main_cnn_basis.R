@@ -44,8 +44,8 @@ num_fold <- 5
 
 # pred_dnn <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
 # pred_dk <- matrix(NA,nrow = length(y), ncol = num_sample)
-# pred_ck <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
-pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
+# pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
 
 # Basis Generating
 
@@ -112,7 +112,7 @@ pred_drop_layer <- layer_dropout(rate=pred_drop)
 set.seed(0)
 fold_number <- sample(1:num_fold,nrow(eh_dat), replace = TRUE)
 
-for (curr_index in 1:num_fold) {
+for (curr_index in 2:num_fold) {
   
   tr_idx <- which(fold_number != curr_index)
   te_idx <- which(fold_number == curr_index)
@@ -224,7 +224,7 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_ck[j,] <- predict(model_ck, list(basis_TE_1,basis_TE_2,basis_TE_3,cov_TE))
+    pred_ck[te_idx,] <- predict(model_ck, list(basis_TE_1,basis_TE_2,basis_TE_3,cov_TE))
   }
   
 }
