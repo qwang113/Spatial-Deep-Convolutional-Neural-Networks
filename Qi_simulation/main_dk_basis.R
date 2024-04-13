@@ -175,7 +175,7 @@ for (curr_index in 1:num_fold) {
   
   
   mod_train_dk <- model_dk %>%
-    fit(x = x_tr_tr, y = y_tr_tr, epochs =2000, batch_size = 1000, 
+    fit(x = x_tr_tr, y = y_tr_tr, epochs =1000, batch_size = 1000, 
         validation_data = list(x_tr_va, y_tr_va) , callbacks = model_checkpoint,
         verbose = 1)
   

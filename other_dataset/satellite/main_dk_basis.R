@@ -9,6 +9,21 @@ library(fields)
 library(FRK)
 use_condaenv("tf_gpu")
 
+load(here::here("other_dataset/satellite/AllSatelliteTemps.RData"))
+sat_dat <- na.omit(all.sat.temps[,c(1,2,4)])
+colnames(sat_dat) <- c("long","lat", "y")
+long <- sat_dat$long
+lat <- sat_dat$lat
+y <- sat_dat$y
+
+
+coordinates(sat_dat) <- ~ long + lat
+grid_res <- 200
+# Parameters setting
+set.seed(0)
+num_fold <- 5
+num_sample <- 100
+pred_drop <- 0.1
 
 min_max_scale <- function(x)
 {
@@ -20,57 +35,58 @@ min_max_scale <- function(x)
   
 }
 
-sim_size = 300
 
-egg_fun <- function(x,y){
-  out <- -(500*y + 47)*sin(sqrt(abs(500*x/2 + 500*y + 47))) - 500*x*sin(sqrt(abs(500*x-(500*y + 47))))
-}
+pred_dk <-  matrix(NA, nrow = length(y), ncol = num_sample)
+pred_dk_g <-  matrix(NA, nrow = grid_res^2, ncol = num_sample)
 
-long_grid = lat_grid <- seq(from = -1, to = 1, length.out = sim_size)
+grid_long <- seq(from = min(long), to = max(long), length.out = grid_res)
+grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
 
-y <- as.vector(outer(X = long_grid, Y = lat_grid, FUN = Vectorize(egg_fun)))
-
-long <- expand.grid(long_grid, lat_grid)[,1]
-lat <- expand.grid(long_grid, lat_grid)[,2]
-eh_dat <- data.frame(long = long, lat = lat, y = y)  
-
-coordinates(eh_dat) <- ~ long + lat
-
-# Parameters setting
-set.seed(0)
-num_sample <- 100
-pred_drop <- 0.1
-num_fold <- 5
-
-# pred_dnn <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
-pred_dk <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
-# pred_ck <- matrix(NA,nrow = length(y), ncol = num_sample)
-# pred_inla <- matrix(NA,nrow = length(y), ncol = num_sample)
+g_long <- expand.grid(grid_long, grid_lat)[,1]
+g_lat <- expand.grid(grid_long,grid_lat)[,2]
 
 # Basis Generating
 
-gridbasis1 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 1, type = "Gaussian", regular = 1)
-gridbasis2 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 2, type = "Gaussian", regular = 1)
-gridbasis3 <- auto_basis(mainfold = plane(), data = eh_dat, nres = 3, type = "Gaussian", regular = 1)
+gridbasis1 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 1, type = "Gaussian", regular = 1)
+gridbasis2 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 2, type = "Gaussian", regular = 1)
+gridbasis3 <- auto_basis(mainfold = plane(), data = sat_dat, nres = 3, type = "Gaussian", regular = 1)
 
 show_basis(gridbasis3) + 
   coord_fixed() +
   xlab("Longitude") +
   ylab("Latitude")
 
-basis_1 <- matrix(NA, nrow = nrow(eh_dat), ncol = length(gridbasis1@fn))
+basis_1 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis1@fn))
 for (i in 1:length(gridbasis1@fn)) {
-  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(eh_dat))
+  basis_1[,i] <- gridbasis1@fn[[i]](coordinates(sat_dat))
 }
 
-basis_2 <- matrix(NA, nrow = nrow(eh_dat), ncol = length(gridbasis2@fn))
+basis_1_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis1@fn))
+for (i in 1:length(gridbasis1@fn)) {
+  basis_1_g[,i] <- gridbasis1@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
+
+
+basis_2 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis2@fn))
 for (i in 1:length(gridbasis2@fn)) {
-  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(eh_dat))
+  basis_2[,i] <- gridbasis2@fn[[i]](coordinates(sat_dat))
 }
 
-basis_3 <- matrix(NA, nrow = nrow(eh_dat), ncol = length(gridbasis3@fn))
+basis_2_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis2@fn))
+for (i in 1:length(gridbasis2@fn)) {
+  basis_2_g[,i] <- gridbasis2@fn[[i]](coordinates(cbind(g_long, g_lat)))
+}
+
+
+
+basis_3 <- matrix(NA, nrow = nrow(sat_dat), ncol = length(gridbasis3@fn))
 for (i in 1:length(gridbasis3@fn)) {
-  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(eh_dat))
+  basis_3[,i] <- gridbasis3@fn[[i]](coordinates(sat_dat))
+}
+
+basis_3_g <- matrix(NA, nrow = nrow(cbind(g_long, g_lat)), ncol = length(gridbasis3@fn))
+for (i in 1:length(gridbasis3@fn)) {
+  basis_3_g[,i] <- gridbasis3@fn[[i]](coordinates(cbind(g_long, g_lat)))
 }
 
 
@@ -79,47 +95,64 @@ basis_use_1_2d <- basis_1
 basis_use_2_2d <- basis_3[,(ncol(basis_1)+1):ncol(basis_2)]
 basis_use_3_2d <- basis_3[,(ncol(basis_2)+1):ncol(basis_3)]
 
+basis_use_1_2d_g <- basis_1_g
+basis_use_2_2d_g <- basis_3_g[,(ncol(basis_1_g)+1):ncol(basis_2_g)]
+basis_use_3_2d_g <- basis_3_g[,(ncol(basis_2_g)+1):ncol(basis_3_g)]
+
+
 # First resolution
 shape_row_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 2 ]))
 shape_col_1 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 1) , 1 ]))
-basis_arr_1 <- array(NA, dim = c(nrow(eh_dat), shape_row_1, shape_col_1))
-for (i in 1:nrow(eh_dat)) {
+basis_arr_1 <- array(NA, dim = c(nrow(sat_dat), shape_row_1, shape_col_1))
+basis_arr_1_g <- array(NA, dim = c(length(g_long), shape_row_1, shape_col_1))
+
+for (i in 1:nrow(sat_dat)) {
   basis_arr_1[i,,] <- matrix(basis_use_1_2d[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
+}
+
+for (i in 1:length(g_long)) {
+  basis_arr_1_g[i,,] <- matrix(basis_use_1_2d_g[i,], nrow = shape_row_1, ncol = shape_col_1, byrow = T)
 }
 
 # Second resolution
 shape_row_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 2 ]))
 shape_col_2 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 2) , 1 ]))
-basis_arr_2 <- array(NA, dim = c(nrow(eh_dat), shape_row_2, shape_col_2))
-for (i in 1:nrow(eh_dat)) {
+basis_arr_2 <- array(NA, dim = c(nrow(sat_dat), shape_row_2, shape_col_2))
+basis_arr_2_g <- array(NA, dim = c(length(g_long), shape_row_2, shape_col_2))
+for (i in 1:nrow(sat_dat)) {
   basis_arr_2[i,,] <- matrix(basis_use_2_2d[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
 }
+for (i in 1:length(g_long)) {
+  basis_arr_2_g[i,,] <- matrix(basis_use_2_2d_g[i,], nrow = shape_row_2, ncol = shape_col_2, byrow = T)
+}
+
 
 # Third resolution
 shape_row_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 2 ]))
 shape_col_3 <- length(table(gridbasis3@df[which(gridbasis3@df$res == 3) , 1 ]))
-basis_arr_3 <- array(NA, dim = c(nrow(eh_dat), shape_row_3, shape_col_3))
-
-for (i in 1:nrow(eh_dat)) {
+basis_arr_3 <- array(NA, dim = c(nrow(sat_dat), shape_row_3, shape_col_3))
+basis_arr_3_g <- array(NA, dim = c(length(g_long), shape_row_3, shape_col_3))
+for (i in 1:nrow(sat_dat)) {
   basis_arr_3[i,,] <- matrix(basis_use_3_2d[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
 }
-
+for (i in 1:length(g_long)) {
+  basis_arr_3_g[i,,] <- matrix(basis_use_3_2d_g[i,], nrow = shape_row_3, ncol = shape_col_3, byrow = T)
+}
 
 pred_drop_layer <- layer_dropout(rate=pred_drop)
 
 
-#DNN
-
+#CNN
 set.seed(0)
-eh_dat <- data.frame(long = long, lat = lat, y = y)  
-tr_idx <- sample(1:nrow(eh_dat),floor(nrow(eh_dat)*0.9))
-eh_tr <- eh_dat[tr_idx,]
-eh_te <- eh_dat[-tr_idx,]
-
-train_index_all <- sample(1:num_fold, nrow(eh_tr), replace = T)
+sat_dat <- data.frame(long = long, lat = lat, y = y)  
+fold_number <- sample(1:num_fold,nrow(sat_dat), replace = TRUE)
+train_index_all <- sample(1:num_fold, nrow(sat_dat), replace = T)
 for (curr_index in 1:num_fold) {
   
-  train_index <- which(train_index_all != curr_index)
+  tr_idx <- which(fold_number != curr_index)
+  te_idx <- which(fold_number == curr_index)
+  train_index <- sample(1:length(tr_idx), floor(0.9*length(tr_idx)))
+  
   basis_tr_1  <- basis_1[tr_idx[train_index],]
   basis_te_1  <- basis_1[tr_idx[-train_index],]
   
@@ -178,9 +211,11 @@ for (curr_index in 1:num_fold) {
   
   for (j in 1:num_sample) {
     print(j)
-    pred_dk[j, curr_index, ] <- predict(model_dk,  cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-tr_idx,], basis_1[-tr_idx,], basis_2[-tr_idx,], basis_3[-tr_idx,]))
-  }
+    pred_dk[te_idx,j] <- predict(model_dk,  cbind(as.matrix(cbind(min_max_scale(long),min_max_scale(lat)))[-tr_idx,], basis_1[-tr_idx,], basis_2[-tr_idx,], basis_3[-tr_idx,]))
+    pred_dk_g[,j] <- predict(model_dk,cbind((g_long- min(long))/diff(range(long)), (g_lat - min(lat))/diff(range(lat)) ,basis_1_g, basis_2_g, basis_3_g))
+    }
 }
 
-mean((apply(pred_dk[,1,], 2 , mean) - y[-tr_idx])^2)
-saveRDS(pred_dk,"D:/77/Research/temp/eh_pred/dk_pred_eh.rds")
+mean((apply(pred_dk, 1 , mean) - y)^2)
+write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/sat_pred/dk_pred_sat.csv",row.names = FALSE)
+write.csv(as.data.frame(pred_dk_g),"D:/77/Research/temp/sat_pred/dk_pred_sat_g.csv",row.names = FALSE)
