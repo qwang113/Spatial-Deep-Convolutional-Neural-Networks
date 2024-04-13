@@ -165,13 +165,22 @@ for (curr_index in 1:num_fold) {
     verbose = 1
   )
   
+  early_stopping <- callback_early_stopping(
+    monitor = "val_loss",
+    mode = "min",
+    verbose = 1,
+    patience = 200,
+    restore_best_weights = TRUE
+  )
+  
   
   mod_train_dk <- model_dk %>%
-    fit(x = x_tr_tr, y = y_tr_tr, epochs =1000, batch_size = 1000, 
-        validation_data = list(x_tr_va, y_tr_va) , callbacks = model_checkpoint)
+    fit(x = x_tr_tr, y = y_tr_tr, epochs =2000, batch_size = 1000, 
+        validation_data = list(x_tr_va, y_tr_va) , callbacks = model_checkpoint,
+        verbose = 1)
   
   
-  model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
+  # model_dk %>% load_model_weights_hdf5("D:/77/research/temp/best_weights.h5")
   
   
   for (j in 1:num_sample) {
