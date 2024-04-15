@@ -592,14 +592,14 @@ pred_inla_g <- matrix(sapply(temp_pos_sample, function(lst) lst$latent[index.pre
 
 # write.csv(as.data.frame(pred_dnn),"D:/77/Research/temp/sat_pred/dnn_pred_sat.csv",row.names = FALSE)
 # write.csv(as.data.frame(pred_dk),"D:/77/Research/temp/sat_pred/dk_pred_sat.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/sat_pred/ck_pred_sat.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/sat_pred/inla_pred_sat.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/sat_pred/ck_pred_sat.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_inla),"D:/77/Research/temp/sat_pred/inla_pred_sat.csv",row.names = FALSE)
 
 
 # write.csv(as.data.frame(pred_dnn_g),"D:/77/Research/temp/sat_pred/dnn_pred_sat_g.csv",row.names = FALSE)
 # write.csv(as.data.frame(pred_dk_g),"D:/77/Research/temp/sat_pred/dk_pred_sat_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_ck_g),"D:/77/Research/temp/sat_pred/ck_pred_sat_g.csv",row.names = FALSE)
-write.csv(as.data.frame(pred_inla_g),"D:/77/Research/temp/sat_pred/inla_pred_sat_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_ck_g),"D:/77/Research/temp/sat_pred/ck_pred_sat_g.csv",row.names = FALSE)
+# write.csv(as.data.frame(pred_inla_g),"D:/77/Research/temp/sat_pred/inla_pred_sat_g.csv",row.names = FALSE)
 
 
 

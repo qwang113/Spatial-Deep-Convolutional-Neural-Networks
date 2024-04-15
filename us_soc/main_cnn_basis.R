@@ -252,7 +252,7 @@ for (curr_index in 1:num_fold) {
     x = list(basis_tr_1, basis_tr_2, basis_tr_3, cov_tr_tr),
     y = y[tr_idx[train_index]],
     epochs=1000,
-    batch_size=1000,
+    batch_size=500,
     validation_data=list(list(basis_te_1,basis_te_2,basis_te_3,cov_tr_va), y[tr_idx[-train_index]]),
     callbacks = model_checkpoint, shuffle = TRUE
   )
@@ -268,6 +268,6 @@ for (curr_index in 1:num_fold) {
   
 }
 
-mean((apply(pred_ck, 2 , mean) - y[-tr_idx])^2)
+mean((apply(pred_ck, 1 , mean) - y)^2)
 write.csv(as.data.frame(pred_ck),"D:/77/Research/temp/soc_pred/ck_pred_soc.csv",row.names = FALSE)
 write.csv(as.data.frame(pred_ck_g),"D:/77/Research/temp/soc_pred/ck_pred_soc_g.csv",row.names = FALSE)

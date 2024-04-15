@@ -14,7 +14,7 @@ score_tab <-
   rbind(
     apply(cbind(mse_inla_all, mse_dnn_all, mse_dk_all, mse_ck_all), 2, mean)
     ,
-    -apply(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all),2, mean)
+    apply(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all),2, mean)
     ,
     matrix(c(icr_inla, icr_dnn, icr_dk, icr_ck), nrow = 1)
     ,

@@ -642,16 +642,29 @@ print(paste("Interval Score of CK is: ", mean(int_score_ck )))
 print(paste("Interval Score of INLA is: ", mean(int_score_inla )))
 
 ```
+# Interval Coverage Rate
 ```{r}
 
 # facet_zoom() add some layers to the plot
 # Add uncertainty surface
 # Write all three datasets
+is_between <- function(value, lower, upper) {
+  return(value >= lower & value <= upper)
+}
 
+HPD_dnn_lo <- apply(pred_dnn,1,quantile,0.025)
+HPD_dnn_up <- apply(pred_dnn,1,quantile,0.975)
+HPD_dk_lo <- apply(pred_dk,1,quantile,0.025)
+HPD_dk_up <- apply(pred_dk,1,quantile,0.975)
+HPD_ck_lo <- apply(pred_ck,1,quantile,0.025)
+HPD_ck_up <- apply(pred_ck,1,quantile,0.975)
+HPD_inla_lo <- apply(pred_inla,1,quantile,0.025)
+HPD_inla_up <- apply(pred_inla,1,quantile,0.975)
 
-
-
-
+dnn_icr <- sum(is_between(y, HPD_dnn_lo, HPD_dnn_up))/length(y)
+dk_icr <- sum(is_between(y, HPD_dk_lo, HPD_dk_up))/length(y)
+ck_icr <- sum(is_between(y, HPD_ck_lo, HPD_ck_up))/length(y)
+inla_icr <- sum(is_between(y, HPD_inla_lo, HPD_inla_up))/length(y)
 ```
 
 

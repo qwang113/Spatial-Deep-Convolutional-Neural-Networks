@@ -20,9 +20,6 @@ lat <- us_soc$lat
 y <- us_soc$y
 coordinates(us_soc) <- ~ long + lat
 
-
-
-coordinates(us_soc) <- ~ long + lat
 grid_res <- 200
 # Parameters setting
 set.seed(0)
