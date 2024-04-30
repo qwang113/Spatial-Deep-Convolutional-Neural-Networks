@@ -40,26 +40,29 @@ int_score_ck <- matrix(read.csv("D:/77/Research/temp/soc_pred/int_ck_soc.csv")$x
 int_score_inla <- matrix(read.csv("D:/77/Research/temp/soc_pred/int_inla_soc.csv")$x, ncol = 1)
 
 rg = c(min(y)- sd(y),max(y)+sd(y))
+ly <- log(y + 0.02)
+rg_obs <- c(min(ly), max(ly))
 
 # Observations ---------------------------------------------------------------
-
+us_map <- map_data("usa")
 obs_sur <-
   ggplot() + theme_bw() + 
   theme(legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position='bottom') +
-  geom_point(aes(x=long,y=lat,colour=y),size=0.8,shape=19) + 
-  scale_colour_gradientn(colours = hcl.colors(10),limits=rg, na.value = "red") +
-  geom_path(data = borders, aes(x = long, y = lat, group = group), color = "red") +
+  geom_point(aes(x=long,y=lat,colour=ly),size=1,shape=19) + 
+  scale_colour_gradientn(colours = hcl.colors(10),limits=rg_obs, na.value = "red") +
+  geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "Observation Points") + 
+  labs(x = "Longitude", y = "Latitude", title = "Observed Logarithm of Response") + 
   theme(plot.title = element_text(hjust = 0.5)) +
+  coord_fixed(ratio = 1.1) +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))
 
-
+obs_sur
 # mean -------------------------------------------------------------------------------------
 
-us_map <- map_data("usa")
+
 tem = spBayes::pointsInPoly(as.matrix(map_data("usa", region = "main")[,1:2]),cbind(g_long, g_lat))
 
 

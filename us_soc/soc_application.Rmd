@@ -82,6 +82,7 @@ create_circle <- function(center_x, center_y, radius, n_points = 100) {
   return(data.frame(x, y))
 }
 
+us_map <- map_data("usa")
 color_plate <- c("red","blue","yellow")
 # Plot circles with different colors
 p <- ggplot() +
@@ -100,10 +101,12 @@ p <- p + guides(fill = guide_legend(
   title = "Legend",
   override.aes = list(color = color_plate, fill = color_plate),
   label = c("Res 1", "Res 2", "Res 3")
-))
-
+)) + geom_polygon(data = us_map, aes(x = long, y = lat, group = group), fill = NA, color = "black", linewidth = 1.5) 
 print(p)
+```
 
+
+```{r}
 basis_1 <- matrix(NA, nrow = nrow(soc_dat), ncol = length(gridbasis1@fn))
 for (i in 1:length(gridbasis1@fn)) {
   basis_1[,i] <- gridbasis1@fn[[i]](coordinates(soc_dat))
