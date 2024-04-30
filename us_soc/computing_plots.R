@@ -74,7 +74,7 @@ pred_sur_dnn <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DNN(base) Mean Prediction") + 
+  labs(x = "Longitude", y = "Latitude", title = "Baseline FNN Prediction Surface") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   coord_fixed(ratio = 1.1) +
   xlim(c(-125, -67)) +
@@ -88,7 +88,7 @@ pred_sur_dk <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DNN(basis) Mean Prediction") + 
+  labs(x = "Longitude", y = "Latitude", title = "DeepKriging Prediction Surface") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50)) +
@@ -102,7 +102,7 @@ pred_sur_ck <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "CNN(basis) Mean Prediction") + 
+  labs(x = "Longitude", y = "Latitude", title = "SDCNN Prediction Surface") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))+
@@ -116,7 +116,7 @@ pred_sur_inla <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "INLA Posterior Mean Prediction") + 
+  labs(x = "Longitude", y = "Latitude", title = "INLA Prediction Surface") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))+
