@@ -48,7 +48,7 @@ coordinates(eh_dat) <- ~ long + lat
 set.seed(0)
 num_sample <- 100
 pred_drop <- 0.1
-
+num_fold = 5
 
 pred_dnn <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))
 pred_dk <- array(NA, dim = c(num_sample, num_fold, floor(length(y)*0.1)))

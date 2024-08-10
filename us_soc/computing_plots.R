@@ -53,7 +53,7 @@ obs_sur <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "Observed Logarithm of Response") + 
+  labs(x = "Longitude", y = "Latitude", title = "Observed Logarithm of Soil Organic Carbon content") + 
   theme(plot.title = element_text(hjust = 0.5)) +
   coord_fixed(ratio = 1.1) +
   xlim(c(-125, -67)) +

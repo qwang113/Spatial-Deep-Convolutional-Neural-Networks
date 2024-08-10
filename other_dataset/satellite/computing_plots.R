@@ -11,14 +11,22 @@ grid_lat <- seq(from = min(lat), to = max(lat), length.out = grid_res)
 
 g_long <- expand.grid(grid_long, grid_lat)[,1]
 g_lat <- expand.grid(grid_long,grid_lat)[,2]
+states <- map_data("state")
 
 # Observations ---------------------------------------------------------------
 ggplot() +
   geom_raster(aes(x = long, y = lat, fill = y)) +
   scale_fill_viridis_c(limits = c(min(y), max(y))) +
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Observation Surface") +
+  geom_polygon(data = states, aes(x = long, y = lat, group = group), 
+               color = "black", fill = NA, linewidth = 1) + # No fill color, just borders
+  coord_fixed(2) + # Aspect ratio
+  theme_void()+ # Remove background and gridlines
+  coord_cartesian(xlim = range(long), ylim = range(lat)) +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Daytime Land Surface Temperature on August 4, 2016") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5)) 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_text(aes(x = c(-95, -93.5,-93.5), y = c(36, 36,36.7), label = c("Oklahoma", "Arkansas","Missouri")),
+            size = 5, color = "black")
 
 # Mean surface -----------------------------------------------------------------
 library(ggplot2)
