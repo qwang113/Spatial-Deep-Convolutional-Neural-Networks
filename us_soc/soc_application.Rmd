@@ -89,7 +89,7 @@ p <- ggplot() +
   theme_minimal() +
   xlab("Longitude") +
   ylab("Latitude") +
-  ggtitle("Basis Function Illustration Havng Three Resolutions") + 
+  ggtitle("Basis Function of SOC Data with Three Resolutions") + 
   theme(plot.title = element_text(hjust = 0.5))
 
 for (i in 1:nrow(basis_use)) {

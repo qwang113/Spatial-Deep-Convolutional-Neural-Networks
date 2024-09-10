@@ -139,7 +139,7 @@ sd_sur_dnn <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DNN(base) Standard Deviation") + 
+  labs(x = "Longitude", y = "Latitude", title = "Baseline FNN Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))+
@@ -153,7 +153,7 @@ sd_sur_dk <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "DNN(basis) Standard Deviation") + 
+  labs(x = "Longitude", y = "Latitude", title = "DeepKriging Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))+
@@ -167,7 +167,7 @@ sd_sur_ck <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "CNN(basis) Standard Deviation") + 
+  labs(x = "Longitude", y = "Latitude", title = "SDCNN Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))+
@@ -181,7 +181,7 @@ sd_sur_inla <-
   geom_path(data = us_map, aes(x = long, y = lat, group = group), color = "red") +
   # scale_x_continuous(limits=range(long),expand=c(0,0)) + 
   # scale_y_continuous(limits=range(lat),expand=c(0,0)) +
-  labs(x = "Longitude", y = "Latitude", title = "INLA Posterior Standard Deviation") + 
+  labs(x = "Longitude", y = "Latitude", title = "INLA Standard Deviation") + 
   theme(plot.title = element_text(hjust = 0.5))  +
   xlim(c(-125, -67)) +
   ylim(c(25, 50))+
@@ -197,13 +197,17 @@ library(ggforce)
 ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all))), 
        aes(x = variable, y = value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
+  scale_x_discrete(labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
-  labs(fill = "Model", y = "Negative CRPS") + 
+                    labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
+  labs(fill = "Model", y = "CRPS") + 
   facet_zoom(ylim = c(0,10)) +
-  guides(fill = "none")+
-  theme_classic()
+  # guides(fill = "none")+ 
+  theme(
+    axis.text.x = element_blank(), # Removes x-axis labels in the zoomed facet
+    axis.title.x = element_blank(), # Optionally removes the x-axis title in the zoomed facet
+    legend.position = "bottom"
+    )
 
 
 # Scores (Interval)------------------------------------------------------------------
@@ -211,12 +215,17 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps
 ggplot(data = reshape2::melt(as.data.frame(cbind(int_score_inla,int_score_dnn,int_score_dk, int_score_ck)))
        , aes(x = variable, y = value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
+  scale_x_discrete(labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
+                    labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
   labs(fill = "Model", y = "Interval Score") + 
   facet_zoom(ylim = c(0,300)) +
-  guides(fill = "none")+
-  theme_classic()
+  # guides(fill = "none")+
+  # theme_classic() +
+  theme(
+    axis.text.x = element_blank(), # Removes x-axis labels in the zoomed facet
+    axis.title.x = element_blank(), # Optionally removes the x-axis title in the zoomed facet
+    legend.position = "bottom"
+  )
 
 

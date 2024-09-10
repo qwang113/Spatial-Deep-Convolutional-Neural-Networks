@@ -66,33 +66,33 @@ pred_sur_dnn <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_dnn_g, 1, mean))) +
   scale_fill_viridis_c(limits = rg) + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(base) Mean Prediction") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "Baseline FNN Prediction Surface") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 pred_sur_dk <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_dk_g, 1, mean))) +
   scale_fill_viridis_c(limits = rg) + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DNN(basis) Mean Prediction") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "DeepKriging Prediction Surface") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 pred_sur_ck <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_ck_g, 1, mean))) +
   scale_fill_viridis_c(limits = rg) + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "CNN(basis) Mean Prediction") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "SDCNN Prediction Surface") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 pred_sur_inla <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_inla_g, 1, mean))) +
   scale_fill_viridis_c(limits = rg) + 
-  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Posterior Mean Prediction") +
+  labs(x = "Longitude", y = "Latitude", fill = "Y", title = "INLA Prediction Surface") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 cowplot::plot_grid(pred_sur_inla, pred_sur_dnn, pred_sur_dk, pred_sur_ck)
 
@@ -109,33 +109,33 @@ sd_sur_dnn <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_dnn_g, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN(base) Standard Deviation") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "Baseline FNN Standard Deviation") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 sd_sur_dk <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_dk_g, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DNN(basis) Standard Deviation") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "DeepKriging Standard Deviation") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 sd_sur_ck <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_ck_g, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "CNN(basis) Standard Deviation") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "SDCNN Standard Deviation") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 sd_sur_inla <-
   ggplot() +
   geom_raster(aes(x = g_long, y = g_lat, fill = apply(pred_inla_g, 1, sd))) +
   scale_fill_viridis_c(limits = c(0, upper)) + 
-  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Posterior Standard Deviation") +
+  labs(x = "Longitude", y = "Latitude", fill = "SD", title = "INLA Standard Deviation") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),legend.title=element_blank(),legend.key.width=unit(2,'cm'),legend.position = "bottom")
 
 cowplot::plot_grid(sd_sur_inla, sd_sur_dnn, sd_sur_dk, sd_sur_ck)
 
@@ -146,13 +146,18 @@ library(ggforce)
 ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps_dk_all,crps_ck_all))), 
        aes(x = variable, y = -value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
+  scale_x_discrete(labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
-  labs(fill = "Model", y = "Negative CRPS") + 
+                    labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
+  labs(fill = "Model", y = "CRPS") + 
   facet_zoom(ylim = c(0,1.5)) +
-  guides(fill = "none")+
-  theme_classic()
+  # guides(fill = "none")+ 
+  theme(
+    axis.text.x = element_blank(), # Removes x-axis labels in the zoomed facet
+    axis.title.x = element_blank(), # Optionally removes the x-axis title in the zoomed facet
+    legend.position = "bottom"
+  )
+
 
 
 # Scores (Interval)------------------------------------------------------------------
@@ -160,11 +165,14 @@ ggplot(data = reshape2::melt(as.data.frame(cbind(crps_inla_all,crps_dnn_all,crps
 ggplot(data = reshape2::melt(as.data.frame(cbind(int_score_inla,int_score_dnn,int_score_dk, int_score_ck)))
        , aes(x = variable, y = value, fill = variable)) +
   geom_boxplot(outlier.size = 1) +
-  scale_x_discrete(labels = c("INLA", "DNN(base)", "DNN(basis)","CNN(basis)")) +
+  scale_x_discrete(labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
   scale_fill_manual(values = c("V1" = "lightblue", "V2" = "lightpink", "V3" = "lightgreen", "V4" = "lightyellow"),
-                    labels = c("INLA", "DNN(base)", "DNN(basis)", "CNN(basis)")) +
+                    labels = c("INLA", "Baseline FNN", "DeepKriging","SDCNN")) +
   labs(fill = "Model", y = "Interval Score") + 
   facet_zoom(ylim = c(0,40)) +
-  guides(fill = "none")+
-  theme_classic()
+  theme(
+    axis.text.x = element_blank(), # Removes x-axis labels in the zoomed facet
+    axis.title.x = element_blank(), # Optionally removes the x-axis title in the zoomed facet
+    legend.position = "bottom"
+  )
 
