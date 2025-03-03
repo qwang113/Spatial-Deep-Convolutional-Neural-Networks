@@ -22,7 +22,6 @@ min_max_scale <- function(x)
 {
   low <- range(x)[1]
   high <- range(x)[2]
-  
   out <- (x - low)/(high - low)
   return(out)
   

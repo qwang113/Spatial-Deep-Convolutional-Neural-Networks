@@ -34,6 +34,7 @@ long <- expand.grid(long_grid, lat_grid)[,1]
 lat <- expand.grid(long_grid, lat_grid)[,2]
 eh_dat <- data.frame(long = long, lat = lat, y = y)  
 
+
 coordinates(eh_dat) <- ~ long + lat
 
 # Parameters setting
